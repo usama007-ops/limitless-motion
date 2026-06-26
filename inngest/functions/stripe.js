@@ -1,6 +1,6 @@
 import { inngest } from '../client'
 import { getAdminClient } from '@/lib/supabaseAdmin'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export const handleCheckoutCompleted = inngest.createFunction(
   { id: 'handle-checkout-completed', name: 'Handle Checkout Session Completed' },
@@ -9,7 +9,7 @@ export const handleCheckoutCompleted = inngest.createFunction(
     const { sessionId } = event.data
 
     const session = await step.run('fetch-session', async () => {
-      return await stripe.checkout.sessions.retrieve(sessionId)
+      return await getStripe().checkout.sessions.retrieve(sessionId)
     })
 
     const customerId = session.customer
@@ -38,7 +38,7 @@ export const handleSubscriptionUpdated = inngest.createFunction(
     const { subscriptionId } = event.data
 
     const subscription = await step.run('fetch-subscription', async () => {
-      return await stripe.subscriptions.retrieve(subscriptionId)
+      return await getStripe().subscriptions.retrieve(subscriptionId)
     })
 
     const customerId = subscription.customer

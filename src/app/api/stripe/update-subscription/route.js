@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { getAdminClient } from '@/lib/supabaseAdmin'
 
 const TIER_PRICING = {
@@ -53,6 +53,7 @@ export async function POST(request) {
     const newPrice = getPrice(newTier, newBillingCycle)
     const newInterval = getBillingInterval(newBillingCycle)
 
+    const stripe = getStripe()
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
 
     const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {

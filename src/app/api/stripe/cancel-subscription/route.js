@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { getAdminClient } from '@/lib/supabaseAdmin'
 
 export async function POST(request) {
@@ -42,6 +42,7 @@ export async function POST(request) {
     const actionLower = action.toLowerCase()
 
     if (actionLower === 'cancel') {
+      const stripe = getStripe()
       result = await stripe.subscriptions.del(subscriptionId)
 
       const today = new Date().toISOString().split('T')[0]
@@ -53,6 +54,7 @@ export async function POST(request) {
         })
         .eq('id', userId)
     } else {
+      const stripe = getStripe()
       result = await stripe.subscriptions.update(subscriptionId, {
         pause_collection: { behavior: 'mark_uncollectible' },
       })

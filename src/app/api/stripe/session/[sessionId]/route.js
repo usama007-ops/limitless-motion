@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export async function GET(request, { params }) {
   try {
@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'sessionId parameter is required' }, { status: 400 })
     }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    const session = await getStripe().checkout.sessions.retrieve(sessionId)
 
     if (!session) {
       return NextResponse.json({ error: `Checkout session not found: ${sessionId}` }, { status: 404 })

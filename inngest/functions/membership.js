@@ -1,6 +1,6 @@
 import { inngest } from '../client'
 import { getAdminClient } from '@/lib/supabaseAdmin'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 export const syncAllSubscriptions = inngest.createFunction(
   {
@@ -28,7 +28,7 @@ export const syncAllSubscriptions = inngest.createFunction(
     for (const profile of profiles) {
       try {
         await step.run(`sync-sub-${profile.id}`, async () => {
-          const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id)
+          const subscription = await getStripe().subscriptions.retrieve(profile.stripe_subscription_id)
           const status = subscription.status
           const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
 

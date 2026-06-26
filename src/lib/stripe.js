@@ -1,3 +1,11 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+let _stripe = null
+
+export function getStripe() {
+  if (_stripe) return _stripe
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) throw new Error('Missing STRIPE_SECRET_KEY')
+  _stripe = new Stripe(key)
+  return _stripe
+}

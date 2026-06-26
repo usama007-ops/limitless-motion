@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { getAdminClient } from '@/lib/supabaseAdmin'
 
 export async function GET(request) {
@@ -25,7 +25,7 @@ export async function GET(request) {
     const paymentMethods = []
 
     if (profile.stripe_customer_id) {
-      const stripePaymentMethods = await stripe.paymentMethods.list({
+      const stripePaymentMethods = await getStripe().paymentMethods.list({
         customer: profile.stripe_customer_id,
         type: 'card',
       })

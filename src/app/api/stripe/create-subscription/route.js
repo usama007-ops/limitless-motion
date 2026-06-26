@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { getAdminClient } from '@/lib/supabaseAdmin'
 
 const TIER_PRICING = {
@@ -55,6 +55,7 @@ export async function POST(request) {
     let customerId = profile.stripe_customer_id
 
     if (!customerId) {
+      const stripe = getStripe()
       const customer = await stripe.customers.create({
         email: profile.email,
         metadata: { userId },
@@ -67,6 +68,7 @@ export async function POST(request) {
         .eq('id', userId)
     }
 
+    const stripe = getStripe()
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [
@@ -89,7 +91,7 @@ export async function POST(request) {
 
     const today = new Date().toISOString().split('T')[0]
 
-    await supabaseAdmin
+    await supabase
       .from('profiles')
       .update({
         stripe_subscription_id: subscription.id,
