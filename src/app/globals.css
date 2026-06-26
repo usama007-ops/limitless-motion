@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+@layer base {
+  :root {
+    --primary: 30 40% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 30 30% 75%;
+    --secondary-foreground: 30 10% 20%;
+    
+    --background: 30 20% 97%;
+    --foreground: 30 10% 20%;
+    
+    --card: 30 25% 92%;
+    --card-foreground: 30 10% 20%;
+    
+    --popover: 30 25% 92%;
+    --popover-foreground: 30 10% 20%;
+    
+    --muted: 30 15% 80%;
+    --muted-foreground: 30 10% 35%;
+    
+    --accent: 45 100% 51%;
+    --accent-foreground: 30 10% 20%;
+    
+    --border: 30 20% 85%;
+    --input: 30 20% 95%;
+    --ring: 30 40% 60%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 30 15% 12%;
+    --foreground: 30 20% 95%;
+    
+    --primary: 30 40% 60%;
+    --primary-foreground: 30 20% 95%;
+    
+    --secondary: 30 20% 20%;
+    --secondary-foreground: 30 20% 95%;
+    
+    --card: 30 15% 15%;
+    --card-foreground: 30 20% 95%;
+    
+    --popover: 30 15% 15%;
+    --popover-foreground: 30 20% 95%;
+    
+    --muted: 30 15% 25%;
+    --muted-foreground: 30 15% 70%;
+    
+    --accent: 45 100% 51%;
+    --accent-foreground: 30 15% 12%;
+    
+    --border: 30 15% 25%;
+    --input: 30 15% 20%;
+    --ring: 30 40% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: "Outfit", sans-serif;
+    overflow-x: hidden;
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight text-balance;
+  }
+}
+
+@layer components {
+  .btn-premium {
+    @apply bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-[0_4px_20px_rgba(212,175,55,0.25)] font-semibold tracking-[0.1em] uppercase transition-all duration-300 rounded-md px-8 py-4 inline-flex items-center justify-center active:scale-[0.98];
+  }
+  
+  .btn-premium-outline {
+    @apply border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:shadow-[0_4px_15px_rgba(201,168,118,0.2)] font-semibold tracking-[0.1em] uppercase transition-all duration-300 rounded-md px-8 py-4 inline-flex items-center justify-center bg-transparent active:scale-[0.98];
+  }
+
+  .meal-card-image,
+  .protein-card-image,
+  .breakfast-card-image {
+    @apply w-full h-48 object-cover object-center transition-transform duration-500 group-hover:scale-105;
+  }
+  
+  .meal-card-image-container {
+    @apply relative w-full h-48 overflow-hidden bg-muted shrink-0;
+  }
+}
+
+@layer utilities {
+  .container-luxury {
+    @apply max-w-7xl mx-auto px-6 sm:px-8 lg:px-12;
+  }
+
+  .heading-display {
+    @apply font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.15] tracking-tight text-foreground;
+  }
+
+  .heading-section {
+    @apply font-serif text-3xl md:text-4xl lg:text-5xl font-medium leading-snug tracking-tight text-foreground;
+  }
+  
+  .animate-flow-infinity {
+    animation: flow-infinity 3.5s linear infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes flow-infinity {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pulse-glow {
+  0% { filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.2)); }
+  100% { filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.6)); }
+}
