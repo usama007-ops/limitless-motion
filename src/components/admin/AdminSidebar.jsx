@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -83,6 +83,7 @@ export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { profile, logout } = useAuth()
+  const [openSection, setOpenSection] = useState('Workouts')
 
   const isActive = (path) => {
     if (path === '/admin') return pathname === '/admin'
@@ -92,6 +93,14 @@ export default function AdminSidebar() {
   const handleLogout = async () => {
     await logout()
     router.push('/login')
+  }
+
+  function toggleSection(label) {
+    setOpenSection(prev => prev === label ? null : label)
+  }
+
+  function isSectionActive(items) {
+    return items.some(item => isActive(item.path))
   }
 
   return (
@@ -111,30 +120,71 @@ export default function AdminSidebar() {
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {sections.map((section, i) => (
           <div key={i}>
-            {section.label && (
-              <p className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {section.label}
-              </p>
-            )}
-            {section.items.map((item) => {
-              const Icon = item.icon
-              const active = isActive(item.path)
-              return (
-                <Link
-                  key={item.path}
-                  href={item.path}
+            {section.label ? (
+              <>
+                <button
+                  onClick={() => toggleSection(section.label)}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200',
-                    active
-                      ? 'bg-accent/10 text-accent border-l-[3px] border-accent'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-[3px] border-transparent'
+                    'flex items-center justify-between w-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] rounded-md transition-colors',
+                    openSection === section.label
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              )
-            })}
+                  <span>{section.label}</span>
+                  {openSection === section.label ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                {openSection === section.label && (
+                  <div className="ml-1 space-y-0.5">
+                    {section.items.map((item) => {
+                      const Icon = item.icon
+                      const active = isActive(item.path)
+                      return (
+                        <Link
+                          key={item.path}
+                          href={item.path}
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200',
+                            active
+                              ? 'bg-accent/10 text-accent border-l-[3px] border-accent'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-[3px] border-transparent'
+                          )}
+                        >
+                          <Icon className="w-4 h-4 shrink-0" />
+                          <span>{item.label}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon
+                  const active = isActive(item.path)
+                  return (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200',
+                        active
+                          ? 'bg-accent/10 text-accent border-l-[3px] border-accent'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-[3px] border-transparent'
+                      )}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
             {i < sections.length - 1 && section.items.length > 0 && (
               <div className="my-2 mx-3 border-t border-border" />
             )}

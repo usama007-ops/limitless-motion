@@ -10,7 +10,7 @@ const fields = [
   { name: 'name', label: 'Product Name', type: 'text', required: true },
   { name: 'description', label: 'Description', type: 'textarea', rows: 3 },
   { name: 'price', label: 'Price', type: 'number' },
-  { name: 'category', label: 'Category', type: 'text' },
+  { name: 'category', label: 'Category', type: 'select', options: ['Tops', 'Bottoms', 'Outerwear', 'Footwear', 'Accessories', 'Activewear', 'Other'] },
   { name: 'image_url', label: 'Image URL', type: 'text', placeholder: 'https://...' },
   { name: 'in_stock', label: 'In Stock', type: 'select', options: ['true', 'false'] },
 ]
