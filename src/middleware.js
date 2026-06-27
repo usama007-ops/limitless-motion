@@ -13,7 +13,6 @@ const protectedPaths = [
 const publicPaths = [
   '/', '/about', '/pricing-coaching', '/login', '/signup',
   '/terms', '/calculator', '/podcasts-interviews', '/apparel',
-  '/lets-move',
 ]
 
 export async function middleware(request) {

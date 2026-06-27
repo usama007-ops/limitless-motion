@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRef, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ChefHat, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -12,26 +12,30 @@ import HighProteinMealPrepOptions from '@/components/meal-plan/HighProteinMealPr
 import EthiopianMealPrepOptions from '@/components/meal-plan/EthiopianMealPrepOptions';
 import FastingBreakfastsList from '@/components/meal-plan/FastingBreakfastsList';
 import ProteinSnacksSection from '@/components/meal-plan/ProteinSnacksSection';
-import { useMealPlanLogic } from '@/hooks/useMealPlanLogic';
+import { useMealPlanGenerator } from '@/hooks/useMealPlanGenerator';
 import { toast } from 'sonner';
 
-const MealPlanPage = () => {
+function MealPlanContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const planRef = useRef(null);
-  
-  const [macros] = useState(null);
-  const [generatedPlan, setGeneratedPlan] = useState(null);
+
+  const initialMacros = searchParams.get('calories') ? {
+    calories: parseInt(searchParams.get('calories')) || 2200,
+    protein: parseInt(searchParams.get('protein')) || 160,
+    carbs: parseInt(searchParams.get('carbs')) || 200,
+    fats: parseInt(searchParams.get('fats')) || 65,
+  } : null;
+
+  const { generatePlan, loading, error, mealPlan } = useMealPlanGenerator();
   const [selectedCategory, setSelectedCategory] = useState(null);
-  
-  const { generatePlan, loading, error } = useMealPlanLogic();
 
   const handleGenerate = async (macroTargets, duration, category) => {
     try {
-      const plan = await generatePlan(macroTargets, duration, category);
-      setGeneratedPlan(plan);
+      await generatePlan(macroTargets, duration, category);
       setSelectedCategory(category);
       toast.success("Meal plan successfully generated!");
-      
+
       setTimeout(() => {
         planRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 300);
@@ -44,10 +48,10 @@ const MealPlanPage = () => {
     <>
       <div className="pt-32 pb-24">
         <div className="container-luxury">
-          
+
           <div className="mb-10">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => router.push('/calculator')}
               className="pl-0 hover:bg-transparent hover:text-primary transition-colors text-muted-foreground font-semibold"
             >
@@ -55,7 +59,7 @@ const MealPlanPage = () => {
             </Button>
           </div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-3xl mx-auto mb-16"
@@ -69,13 +73,13 @@ const MealPlanPage = () => {
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <MealPlanGenerator 
-              initialMacros={macros}
+            <MealPlanGenerator
+              initialMacros={initialMacros}
               onGenerate={handleGenerate}
               loading={loading}
               error={error}
@@ -83,16 +87,16 @@ const MealPlanPage = () => {
           </motion.div>
 
           <AnimatePresence>
-            {generatedPlan && (
-              <motion.div 
+            {mealPlan && (
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 className="mt-8"
               >
-                <MealPlanDisplay 
-                  ref={planRef} 
-                  plan={generatedPlan} 
-                  targetMacros={macros || { calories: 2200, protein: 160, carbs: 200, fats: 65 }} 
+                <MealPlanDisplay
+                  ref={planRef}
+                  plan={mealPlan}
+                  targetMacros={initialMacros || { calories: 2200, protein: 160, carbs: 200, fats: 65 }}
                   category={selectedCategory}
                 />
               </motion.div>
@@ -147,6 +151,12 @@ const MealPlanPage = () => {
       </div>
     </>
   );
-};
+}
 
-export default MealPlanPage;
+export default function MealPlanPage() {
+  return (
+    <Suspense fallback={null}>
+      <MealPlanContent />
+    </Suspense>
+  );
+}

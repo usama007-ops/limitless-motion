@@ -33,7 +33,7 @@ const MembershipCard = () => {
             <span className="text-5xl font-extrabold">$15</span>
             <span className="text-secondary-foreground/60 font-medium">/ month</span>
           </div>
-          <Link to="/signup" className="inline-block w-full md:w-auto text-center bg-primary text-primary-foreground px-8 py-4 rounded-xl font-bold tracking-wide transition-all hover:bg-primary/90 hover:shadow-celadon active:scale-[0.98]">
+          <Link href="/signup" className="inline-block w-full md:w-auto text-center bg-primary text-primary-foreground px-8 py-4 rounded-xl font-bold tracking-wide transition-all hover:bg-primary/90 hover:shadow-celadon active:scale-[0.98]">
             Join Membership
           </Link>
         </div>

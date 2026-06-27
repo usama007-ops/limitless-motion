@@ -250,7 +250,13 @@ const MacroCalculator = () => {
 
   const handleGeneratePlan = () => {
     if (results) {
-      router.push('/meal-plan')
+      const params = new URLSearchParams({
+        calories: results.calories,
+        protein: results.protein,
+        carbs: results.carbs,
+        fats: results.fats,
+      })
+      router.push(`/meal-plan?${params}`)
     }
   }
 

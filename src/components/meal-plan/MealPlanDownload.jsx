@@ -64,7 +64,7 @@ const MealPlanDownload = ({ planRef, hasPlan }) => {
           </div>
         </div>
         <Button asChild variant="default" className="font-bold rounded-xl whitespace-nowrap">
-          <Link to="/signup">Create Free Account</Link>
+          <Link href="/signup">Create Free Account</Link>
         </Button>
       </div>
     );

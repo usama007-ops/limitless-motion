@@ -88,6 +88,64 @@ async function main() {
     { name: 'Mindful Movement', description: 'Low-impact mobility and mindfulness for recovery days.', goal: 'Improve flexibility', difficulty: 'beginner', category: 'think', workout_type: 'mindfulness', session_duration: 30, target_audience: 'all', social: false },
   ])
 
+  // ─── Workout Days + Exercises for Move page ───
+  console.log('Inserting workout_days and exercises...')
+  const { data: programsList } = await supabase.from('workout_programs').select('id')
+  if (programsList && programsList.length > 0) {
+    for (const program of programsList) {
+      const { count } = await supabase.from('workout_days').select('*', { count: 'exact', head: true }).eq('program_id', program.id)
+      if (count > 0) {
+        console.log(`  SKIP (days already exist for ${program.id})`)
+        continue
+      }
+
+      const dayTemplates = [
+        { day_of_week: 1, day_name: 'Functional Foundations', focus_area: 'Full Body', estimated_duration: 45,
+          exercises: [
+            { exercise_name: 'Turkish Get-Ups', sets: 3, reps: '5/side', duration: null, muscle_groups: 'Full Body', form_tips: 'Keep eyes on the bell, move deliberately.' },
+            { exercise_name: 'Kettlebell Deadlifts', sets: 4, reps: '10', duration: null, muscle_groups: 'Posterior Chain', form_tips: 'Hinge at hips, maintain neutral spine.' },
+            { exercise_name: 'Farmer Carries', sets: 4, reps: '40m', duration: null, muscle_groups: 'Core/Grip', form_tips: 'Tall posture, braced core.' },
+            { exercise_name: 'Bear Crawls', sets: 3, reps: '20m', duration: null, muscle_groups: 'Shoulders/Core', form_tips: 'Keep hips low and level.' },
+            { exercise_name: '90/90 Hip Switches', sets: 2, reps: '10/side', duration: null, muscle_groups: 'Mobility', form_tips: 'Move slowly, explore end ranges.' },
+          ] },
+        { day_of_week: 2, day_name: 'Mobility Flow', focus_area: 'Flexibility', estimated_duration: 35,
+          exercises: [
+            { exercise_name: 'World\'s Greatest Stretch', sets: 2, reps: '5/side', duration: null, muscle_groups: 'Hips/T-Spine', form_tips: 'Breathe into the rotation.' },
+            { exercise_name: 'Cossack Squats', sets: 3, reps: '8/side', duration: null, muscle_groups: 'Hips/Legs', form_tips: 'Keep heel down on straight leg.' },
+            { exercise_name: 'Downward Dog to Cobra', sets: 3, reps: '10', duration: null, muscle_groups: 'Full Body', form_tips: 'Flow smoothly with breath.' },
+            { exercise_name: 'Thread the Needle', sets: 2, reps: '8/side', duration: null, muscle_groups: 'T-Spine', form_tips: 'Reach far, open chest.' },
+          ] },
+        { day_of_week: 3, day_name: 'Strength & Stability', focus_area: 'Strength', estimated_duration: 50,
+          exercises: [
+            { exercise_name: 'Single Leg RDLs', sets: 4, reps: '8/side', duration: null, muscle_groups: 'Hamstrings/Balance', form_tips: 'Hinge slowly, keep hips square.' },
+            { exercise_name: 'Overhead Press', sets: 4, reps: '10', duration: null, muscle_groups: 'Shoulders', form_tips: 'Ribs down, squeeze glutes.' },
+            { exercise_name: 'Pallof Presses', sets: 3, reps: '12/side', duration: null, muscle_groups: 'Core Anti-rotation', form_tips: 'Resist the pull, exhale on press.' },
+            { exercise_name: 'Sled Pushes', sets: 4, reps: '30m', duration: null, muscle_groups: 'Legs/Conditioning', form_tips: 'Consistent drive, low angle.' },
+          ] },
+        { day_of_week: 4, day_name: 'Active Recovery', focus_area: 'Recovery', estimated_duration: 30,
+          exercises: [
+            { exercise_name: 'Cat-Cow', sets: 2, reps: '15', duration: null, muscle_groups: 'Spine', form_tips: 'Segmental movement.' },
+            { exercise_name: 'Pigeon Pose', sets: 2, reps: '60 sec/side', duration: null, muscle_groups: 'Hips', form_tips: 'Relax into the stretch.' },
+            { exercise_name: 'Box Breathing', sets: 1, reps: '5 min', duration: null, muscle_groups: 'Nervous System', form_tips: '4s inhale, 4s hold, 4s exhale, 4s hold.' },
+          ] },
+      ]
+
+      for (const dayTmpl of dayTemplates) {
+        const { exercises, ...dayData } = dayTmpl
+        const { data: dayRecord, error: dayErr } = await supabase
+          .from('workout_days').insert({ ...dayData, program_id: program.id }).select().single()
+        if (dayErr) {
+          console.error(`  FAILED to insert day ${dayTmpl.day_name}:`, dayErr.message)
+          continue
+        }
+        const exRecords = exercises.map(ex => ({ ...ex, day_id: dayRecord.id }))
+        const { error: exErr } = await supabase.from('exercises').insert(exRecords)
+        if (exErr) console.error(`  FAILED to insert exercises for ${dayTmpl.day_name}:`, exErr.message)
+      }
+      console.log(`  OK (${dayTemplates.length} days for program ${program.id})`)
+    }
+  }
+
   // ─── Workout Videos ───
   console.log('Inserting workout_videos...')
   await insertIfEmpty('workout_videos', [
