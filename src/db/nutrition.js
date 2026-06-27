@@ -26,6 +26,18 @@ export async function getMealRecipesSorted(sortBy = 'calories_total', ascending 
   }, TTL.RECIPES)
 }
 
+export async function getMealRecipesBySeason(season) {
+  return getOrSet(cacheKey(CACHE_PREFIX, 'meal-recipes', 'season', season), async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('meal_recipes')
+      .select('*')
+      .eq('season', season)
+    if (error) throw error
+    return data
+  }, TTL.RECIPES)
+}
+
 // ─── Ethiopian Meals ───
 
 export async function getEthiopianMeals() {

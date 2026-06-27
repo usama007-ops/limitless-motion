@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Leaf, ArrowLeft } from 'lucide-react';
+import { Leaf, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import TeffInjEraEducation from '@/components/meal-plan/TeffInjEraEducation';
 import EthiopianFastingDishCard from '@/components/meal-plan/EthiopianFastingDishCard';
 import { Button } from '@/components/ui/button';
+import { getEthiopianMeals } from '@/db';
 
-const fastingDishesData = [
+const fallbackDishes = [
   {
     name: "Misir Wot",
     description: "A deeply flavorful, slow-cooked spicy red lentil stew featuring aromatic berbere spice.",
@@ -41,10 +42,50 @@ const fastingDishesData = [
   }
 ];
 
+function mapEthiopianMealToDish(m) {
+  const ingredients = Array.isArray(m.ingredients) ? m.ingredients : ['No ingredient data'];
+  const cal = Number(m.calories_total) || 0;
+  return {
+    name: m.name,
+    description: m.description || '',
+    ingredients: ingredients.map(i => i.charAt(0).toUpperCase() + i.slice(1)),
+    nutritionFacts: {
+      calories: cal,
+      protein: Number(m.protein_grams) || 0,
+      carbs: Number(m.carbs_grams) || 0,
+      fiber: 0,
+      fat: Number(m.fats_grams) || 0,
+      iron: 0,
+      calcium: 0,
+    },
+    healthBenefits: ["Nutrient-dense traditional dish", "Supports overall wellness", "Rich in plant-based nutrition"],
+    prepTime: m.prep_time_minutes ? `${m.prep_time_minutes} mins` : '30 mins',
+    servingSize: '1 serving',
+    whyGoodForFasting: 'A traditional Ethiopian dish packed with plant-based nutrients to sustain energy during fasting periods.'
+  };
+}
+
 const EthiopianFastingPage = () => {
+  const [dishes, setDishes] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     document.title = 'Ethiopian Fasting Foods | Limitless Motion';
+    loadDishes();
   }, []);
+
+  async function loadDishes() {
+    try {
+      const data = await getEthiopianMeals();
+      if (data?.length) setDishes(data.map(mapEthiopianMealToDish));
+    } catch (err) {
+      console.error('Failed to load dishes from DB, using fallback:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const displayDishes = dishes || fallbackDishes;
 
   return (
     <div className="pt-32 pb-24">
@@ -87,19 +128,25 @@ const EthiopianFastingPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {fastingDishesData.map((dish, idx) => (
-              <motion.div 
-                key={idx}
-                initial={{ opacity: 0, y: 20 }} 
-                whileInView={{ opacity: 1, y: 0 }} 
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.4, delay: Math.min(idx * 0.1, 0.3) }}
-              >
-                <EthiopianFastingDishCard meal={dish} />
-              </motion.div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              {displayDishes.map((dish, idx) => (
+                <motion.div 
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }} 
+                  whileInView={{ opacity: 1, y: 0 }} 
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.4, delay: Math.min(idx * 0.1, 0.3) }}
+                >
+                  <EthiopianFastingDishCard meal={dish} />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
