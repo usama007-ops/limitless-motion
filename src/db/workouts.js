@@ -121,6 +121,156 @@ export async function deleteWorkout(id) {
 
 // ─── User Workout Progress ───
 
+export async function upsertUserWorkoutProgress(userId, { program_id, current_day, completed_exercises, weights = {} }) {
+  const supabase = createClient()
+  const { data: existing } = await supabase
+    .from('user_workout_progress')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('program_id', program_id)
+    .maybeSingle()
+
+  const payload = {
+    current_day,
+    completed_exercises,
+    weights,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from('user_workout_progress')
+      .update(payload)
+      .eq('id', existing.id)
+      .select('*, workout_programs(*)')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  const { data, error } = await supabase
+    .from('user_workout_progress')
+    .insert({
+      user_id: userId,
+      program_id,
+      current_day,
+      completed_exercises,
+      weights,
+      start_date: new Date().toISOString().split('T')[0],
+    })
+    .select('*, workout_programs(*)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getWeeklyActivity(userId) {
+  const supabase = createClient()
+  const today = new Date()
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('date')
+    .eq('user_id', userId)
+    .gte('date', sevenDaysAgo.toISOString().split('T')[0])
+    .lte('date', today.toISOString().split('T')[0])
+  if (error) throw error
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const activityMap = {}
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sevenDaysAgo)
+    d.setDate(d.getDate() + i)
+    const key = d.toISOString().split('T')[0]
+    activityMap[key] = { name: dayNames[d.getDay()], workouts: 0 }
+  }
+
+  if (data) {
+    const seen = new Set()
+    for (const w of data) {
+      const key = w.date
+      if (!seen.has(key)) {
+        seen.add(key)
+        if (activityMap[key]) activityMap[key].workouts++
+      }
+    }
+  }
+
+  return Object.values(activityMap)
+}
+
+export async function getWorkoutStreak(userId) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('date')
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+  if (error) throw error
+
+  if (!data || data.length === 0) return { currentStreak: 0, longestStreak: 0 }
+
+  const uniqueDates = [...new Set(data.map(w => w.date))].sort().reverse()
+
+  let currentStreak = 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (let i = 0; i < uniqueDates.length; i++) {
+    const d = new Date(uniqueDates[i] + 'T00:00:00')
+    const expected = new Date(today)
+    expected.setDate(expected.getDate() - i)
+    expected.setHours(0, 0, 0, 0)
+    if (d.getTime() === expected.getTime()) {
+      currentStreak++
+    } else {
+      break
+    }
+  }
+
+  let longestStreak = 0
+  let tempStreak = 1
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const prev = new Date(uniqueDates[i - 1] + 'T00:00:00')
+    const curr = new Date(uniqueDates[i] + 'T00:00:00')
+    const diff = Math.round((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24))
+    if (diff === 1) {
+      tempStreak++
+    } else {
+      longestStreak = Math.max(longestStreak, tempStreak)
+      tempStreak = 1
+    }
+  }
+  longestStreak = Math.max(longestStreak, tempStreak)
+
+  return { currentStreak, longestStreak }
+}
+
+export async function getWorkoutStats(userId) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('workouts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+  if (error) throw error
+
+  const totalWorkouts = data ? new Set(data.map(w => w.date)).size : 0
+  const recentWorkouts = (data || []).slice(0, 10).map(w => ({
+    id: w.id,
+    exerciseName: w.exercise_name,
+    sets: w.sets,
+    reps: w.reps,
+    weight: w.weight,
+    weightUnit: w.weight_unit,
+    date: w.date,
+  }))
+
+  return { totalWorkouts, recentWorkouts }
+}
+
 export async function getUserWorkoutProgress(userId, { categoryFilter } = {}) {
   const supabase = createClient()
   let query = supabase

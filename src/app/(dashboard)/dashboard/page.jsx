@@ -1,28 +1,44 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dumbbell, TrendingUp, Calendar, ArrowRight, Activity, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getWorkoutStats, getWorkoutStreak } from '@/db';
 
 const ClientDashboard = () => {
   const { currentUser } = useAuth();
-  const [stats] = useState({
-    totalWorkouts: 0,
-    recentWorkouts: [],
-  });
+  const [stats, setStats] = useState({ totalWorkouts: 0, recentWorkouts: [] });
+  const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     document.title = `Dashboard - ${currentUser?.name || 'Client'} - Limitless Motion`;
   }, [currentUser]);
 
+  const fetchData = useCallback(async () => {
+    if (!currentUser) return;
+    setLoading(true);
+    try {
+      const [statsData, streakData] = await Promise.all([
+        getWorkoutStats(currentUser.id),
+        getWorkoutStreak(currentUser.id),
+      ]);
+      setStats(statsData);
+      setStreak(streakData);
+    } catch (e) {
+      console.error('Failed to load dashboard stats:', e);
+    }
+    setLoading(false);
+  }, [currentUser]);
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    fetchData();
+  }, [fetchData]);
+
+  const lastWorkout = stats.recentWorkouts?.[0];
 
   return (
     <div className="pt-32 pb-24">
@@ -54,6 +70,9 @@ const ClientDashboard = () => {
               <p className="text-5xl font-medium font-serif text-foreground">
                 {stats.totalWorkouts}
               </p>
+              {streak.currentStreak > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">{streak.currentStreak}-day streak</p>
+              )}
             </div>
 
             <div className="bg-card border border-border rounded-lg p-8 shadow-sm relative overflow-hidden group hover:border-accent transition-colors">
@@ -63,8 +82,9 @@ const ClientDashboard = () => {
                 This Week
               </div>
               <p className="text-5xl font-medium font-serif text-foreground">
-                0
+                {stats.totalWorkouts > 0 ? 'Active' : '0'}
               </p>
+              <p className="text-sm text-muted-foreground mt-2">Keep moving forward</p>
             </div>
 
             <div className="bg-card border border-border rounded-lg p-8 shadow-sm relative overflow-hidden group hover:border-secondary-foreground transition-colors">
@@ -74,8 +94,13 @@ const ClientDashboard = () => {
                 Last Workout
               </div>
               <p className="text-2xl font-medium font-serif text-foreground mt-2">
-                No workouts yet
+                {lastWorkout
+                  ? new Date(lastWorkout.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : 'No workouts yet'}
               </p>
+              {lastWorkout && (
+                <p className="text-sm text-muted-foreground mt-1">{lastWorkout.exerciseName}</p>
+              )}
             </div>
           </div>
         )}
@@ -95,7 +120,7 @@ const ClientDashboard = () => {
               </div>
             ) : stats.recentWorkouts.length > 0 ? (
               <div className="space-y-4">
-                {stats.recentWorkouts.map((workout) => (
+                {stats.recentWorkouts.slice(0, 5).map((workout) => (
                   <div
                     key={workout.id}
                     className="flex justify-between items-center p-5 bg-background border border-border rounded-md hover:border-primary hover:shadow-sm transition-all"
@@ -103,12 +128,12 @@ const ClientDashboard = () => {
                     <div>
                       <p className="font-semibold text-foreground text-lg">{workout.exerciseName}</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {workout.sets} sets x{workout.reps} reps
-                        {workout.weight && ` \u00D7 ${workout.weight}${workout.weightUnit || 'lbs'}`}
+                        {workout.sets} sets × {workout.reps} reps
+                        {workout.weight && ` @ ${workout.weight}${workout.weightUnit || 'lbs'}`}
                       </p>
                     </div>
                     <p className="text-xs text-primary font-semibold tracking-[0.1em] uppercase">
-                      {new Date(workout.date).toLocaleDateString('en-US', {
+                      {new Date(workout.date + 'T00:00:00').toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                       })}
@@ -122,7 +147,7 @@ const ClientDashboard = () => {
                   No workouts logged yet. Start tracking your progress.
                 </p>
                 <Button asChild className="btn-premium-outline">
-                  <Link href="/track">Log First Workout</Link>
+                  <Link href="/move">Start Your First Workout</Link>
                 </Button>
               </div>
             )}
@@ -133,9 +158,9 @@ const ClientDashboard = () => {
               <Activity className="text-primary-foreground mb-6" size={28} strokeWidth={1.5} />
               <h3 className="text-xl font-serif font-medium mb-2 text-primary-foreground tracking-wide">Workout Tracker</h3>
               <p className="text-primary-foreground/80 mb-8 text-sm">Log your exercises and track your progress over time.</p>
-              <Link href="/track" className="mt-auto">
+              <Link href="/move" className="mt-auto">
                 <Button className="w-full bg-background text-foreground hover:bg-background/90 font-semibold uppercase tracking-[0.1em] py-6 rounded-md transition-all">
-                  Go to Tracker <ArrowRight className="ml-2" size={16} />
+                  Go to Workouts <ArrowRight className="ml-2" size={16} />
                 </Button>
               </Link>
             </div>
