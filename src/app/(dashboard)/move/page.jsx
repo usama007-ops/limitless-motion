@@ -236,8 +236,10 @@ const MovePage = () => {
               {['Beginner', 'Intermediate', 'Advanced'].map(level => (
                 <Button
                   key={level}
-                  variant={difficulty === level ? "secondary" : "outline"}
-                  className={difficulty === level ? "bg-white text-[hsl(var(--brand-move))] hover:bg-white/90 font-bold" : "border-white/50 text-white hover:bg-white/10 font-bold"}
+                  variant={difficulty === level ? "secondary" : "ghost"}
+                  className={difficulty === level
+                    ? "bg-white text-[hsl(var(--brand-move))] hover:bg-white/90 font-bold"
+                    : "border border-white/50 bg-transparent text-white hover:bg-white/10 font-bold"}
                   onClick={() => setDifficulty(level)}
                 >
                   {level}
