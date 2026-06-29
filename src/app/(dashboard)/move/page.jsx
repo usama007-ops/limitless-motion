@@ -79,8 +79,9 @@ function processDays(days) {
 const MovePage = () => {
   const { currentUser } = useAuth();
   const router = useRouter();
-  const [difficulty, setDifficulty] = useState('Intermediate');
+  const [difficulty, setDifficulty] = useState(null);
   const [programs, setPrograms] = useState([]);
+  const [filteredPrograms, setFilteredPrograms] = useState([]);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [days, setDays] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -98,8 +99,10 @@ const MovePage = () => {
       const records = await getWorkoutPrograms();
       if (records && records.length > 0) {
         setPrograms(records);
-        setSelectedProgram(records[0].id);
-        await loadProgramDays(records[0].id);
+        const first = records[0];
+        setSelectedProgram(first.id);
+        setDifficulty(first.difficulty || null);
+        await loadProgramDays(first.id);
         return;
       }
     } catch (e) {
@@ -108,6 +111,21 @@ const MovePage = () => {
     setDays(fallbackMoveWeek);
     setLoading(false);
   }
+
+  useEffect(() => {
+    if (programs.length === 0) return;
+    const filtered = difficulty
+      ? programs.filter(p => p.difficulty === difficulty.toLowerCase())
+      : [...programs];
+    setFilteredPrograms(filtered);
+    if (filtered.length > 0 && (!selectedProgram || !filtered.find(p => p.id === selectedProgram))) {
+      setSelectedProgram(filtered[0].id);
+      loadProgramDays(filtered[0].id);
+    }
+    if (filtered.length === 0) {
+      setDays(null);
+    }
+  }, [difficulty, programs]);
 
   async function loadProgramDays(programId) {
     setLoading(true);
@@ -233,25 +251,30 @@ const MovePage = () => {
               Master your body. Focus on movement quality, functional strength, and mobility flows to build a resilient, pain-free foundation for life.
             </p>
             <div className="flex flex-wrap gap-4">
-              {['Beginner', 'Intermediate', 'Advanced'].map(level => (
-                <Button
-                  key={level}
-                  variant={difficulty === level ? "secondary" : "ghost"}
-                  className={difficulty === level
-                    ? "bg-white text-[hsl(var(--brand-move))] hover:bg-white/90 font-bold"
-                    : "border border-white/50 bg-transparent text-white hover:bg-white/10 font-bold"}
-                  onClick={() => setDifficulty(level)}
-                >
-                  {level}
-                </Button>
-              ))}
+              {['Beginner', 'Intermediate', 'Advanced'].map(level => {
+                const active = difficulty === level;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    className={`px-5 py-2.5 rounded-md text-sm font-bold transition-all duration-200 ${
+                      active
+                        ? 'bg-white text-[hsl(var(--brand-move))] shadow-md'
+                        : 'border border-white/50 bg-transparent text-white hover:bg-white/15'
+                    }`}
+                    onClick={() => setDifficulty(active ? null : level)}
+                  >
+                    {level}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </motion.div>
 
-        {programs.length > 1 && (
+        {filteredPrograms.length > 0 && (
           <div className="flex flex-wrap gap-3 mb-10">
-            {programs.map(p => (
+            {filteredPrograms.map(p => (
               <Button
                 key={p.id}
                 variant={selectedProgram === p.id ? "default" : "outline"}
@@ -266,9 +289,11 @@ const MovePage = () => {
 
         <div className="mb-12">
           <h2 className="heading-section mb-8">
-            {selectedProgram
-              ? programs.find(p => p.id === selectedProgram)?.name || "This Week's Protocol"
-              : "This Week's Protocol"}
+            {filteredPrograms.length === 0
+              ? 'No programs found for this level'
+              : selectedProgram
+                ? filteredPrograms.find(p => p.id === selectedProgram)?.name || "This Week's Protocol"
+                : "This Week's Protocol"}
           </h2>
 
           {loading ? (
