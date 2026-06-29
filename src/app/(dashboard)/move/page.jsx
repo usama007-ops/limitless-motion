@@ -223,7 +223,7 @@ const MovePage = () => {
                     className={`px-5 py-2.5 rounded-md text-sm font-bold transition-all duration-200 ${
                       active
                         ? 'bg-white text-[hsl(var(--brand-move))] shadow-md'
-                        : 'border border-white/50 bg-transparent text-white hover:bg-white/15'
+                        : 'border border-white/50 bg-transparent text-black hover:bg-white/15'
                     }`}
                     onClick={() => setDifficulty(active ? null : level)}
                   >
@@ -403,6 +403,36 @@ const MovePage = () => {
                                                   </div>
                                                 );
                                               })}
+
+                                              {!completed && (
+                                                <div className="flex justify-end col-span-full pt-1">
+                                                  <Button
+                                                    size="sm"
+                                                    disabled={!dayExs.every(ex => checkedExercises[ex.id]) || completing}
+                                                    onClick={handleComplete}
+                                                    className="bg-[hsl(var(--brand-move))] hover:bg-[hsl(var(--brand-move))/90] text-white font-bold gap-2"
+                                                  >
+                                                    {completing ? (
+                                                      <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                                                    ) : (
+                                                      <><Trophy className="w-4 h-4" /> Complete Workout</>
+                                                    )}
+                                                  </Button>
+                                                </div>
+                                              )}
+
+                                              {completed && (
+                                                <div className="flex justify-end col-span-full pt-1">
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => router.push('/track')}
+                                                    className="gap-2 font-semibold"
+                                                  >
+                                                    View Progress <ArrowRight className="w-4 h-4" />
+                                                  </Button>
+                                                </div>
+                                              )}
                                             </div>
                                           </motion.div>
                                         )}
@@ -456,34 +486,7 @@ const MovePage = () => {
                     </div>
                   )}
 
-                  {!completed && (
-                    <div className="flex justify-end pt-2">
-                      <Button
-                        size="lg"
-                        disabled={!allChecked || completing}
-                        onClick={handleComplete}
-                        className="bg-[hsl(var(--brand-move))] hover:bg-[hsl(var(--brand-move))/90] text-white font-bold gap-2"
-                      >
-                        {completing ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-                        ) : (
-                          <><Trophy className="w-4 h-4" /> Complete Workout</>
-                        )}
-                      </Button>
-                    </div>
-                  )}
 
-                  {completed && (
-                    <div className="flex justify-end pt-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push('/track')}
-                        className="gap-2 font-semibold"
-                      >
-                        View Progress <ArrowRight className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </div>
             </motion.div>
