@@ -103,7 +103,7 @@ async function main() {
       await supabase.from('exercises').delete().eq('program_id', program.id)
       await supabase.from('workout_days').delete().eq('program_id', program.id)
 
-      const dayNames = ['Full Body Strength', 'Cardio & Conditioning', 'Mobility & Recovery', 'Power & Explosiveness']
+      const dayNames = ['Full Body Strength', 'Cardio & Conditioning', 'Mobility & Recovery', 'Power & Explosiveness', 'Core & Stability', 'Active Recovery', 'Full Body Endurance']
       const exercisePool = [
         { exercise_name: 'Turkish Get-Ups', sets: 3, reps: '5/side', muscle_groups: 'Full Body', form_tips: 'Keep eyes on the bell, move deliberately.' },
         { exercise_name: 'Kettlebell Deadlifts', sets: 4, reps: '10', muscle_groups: 'Posterior Chain', form_tips: 'Hinge at hips, maintain neutral spine.' },
@@ -121,12 +121,28 @@ async function main() {
         { exercise_name: 'Superman Hold', sets: 3, reps: '30s', muscle_groups: 'Lower Back', form_tips: 'Lift chest and legs simultaneously.' },
         { exercise_name: 'Bicycle Crunches', sets: 3, reps: '20', muscle_groups: 'Core', form_tips: 'Elbow to opposite knee.' },
         { exercise_name: 'Mountain Climbers', sets: 4, reps: '30s', muscle_groups: 'Full Body', form_tips: 'Keep hips low, drive knees.' },
+        { exercise_name: 'Box Jumps', sets: 3, reps: '10', muscle_groups: 'Power', form_tips: 'Land softly, full extension at top.' },
+        { exercise_name: 'Pull-ups', sets: 4, reps: '8', muscle_groups: 'Back/Biceps', form_tips: 'Full range of motion, no kipping.' },
+        { exercise_name: 'Dips', sets: 3, reps: '12', muscle_groups: 'Chest/Triceps', form_tips: 'Keep elbows tucked.' },
+        { exercise_name: 'Bent Over Rows', sets: 4, reps: '10', muscle_groups: 'Back', form_tips: 'Retract shoulder blades at top.' },
+        { exercise_name: 'Overhead Press', sets: 4, reps: '10', muscle_groups: 'Shoulders', form_tips: 'Brace core, press straight up.' },
+        { exercise_name: 'Romanian Deadlifts', sets: 4, reps: '12', muscle_groups: 'Hamstrings', form_tips: 'Hinge at hips, soft knees.' },
+        { exercise_name: 'Push Press', sets: 3, reps: '8', muscle_groups: 'Full Body', form_tips: 'Use leg drive to press.' },
+        { exercise_name: 'Pistol Squats', sets: 3, reps: '5/side', muscle_groups: 'Legs', form_tips: 'Use support if needed.' },
+        { exercise_name: 'Burpees', sets: 4, reps: '15', muscle_groups: 'Full Body', form_tips: 'Jump back, chest to floor.' },
+        { exercise_name: 'Jump Rope', sets: 3, reps: '60s', muscle_groups: 'Cardio', form_tips: 'Stay light on your feet.' },
+        { exercise_name: 'Battle Ropes', sets: 4, reps: '30s', muscle_groups: 'Shoulders/Core', form_tips: 'Generate power from hips.' },
+        { exercise_name: 'Kettlebell Swings', sets: 4, reps: '20', muscle_groups: 'Posterior Chain', form_tips: 'Hip hinge, not squat.' },
+        { exercise_name: 'Wall Balls', sets: 3, reps: '15', muscle_groups: 'Legs/Shoulders', form_tips: 'Full squat, hit target.' },
+        { exercise_name: 'Toes to Bar', sets: 3, reps: '10', muscle_groups: 'Core', form_tips: 'Control the descent.' },
+        { exercise_name: 'Handstand Hold', sets: 3, reps: '20s', muscle_groups: 'Shoulders/Core', form_tips: 'Wall support OK.' },
+        { exercise_name: 'Sled Pushes', sets: 4, reps: '30m', muscle_groups: 'Full Body', form_tips: 'Drive through full foot.' },
       ]
 
-      // 4 weeks, each with 4 days, 2 exercises per day
+      // 4 weeks, each with 7 days, 2 exercises per day
       for (let week = 1; week <= 4; week++) {
         const insertedDays = []
-        for (let d = 0; d < 4; d++) {
+        for (let d = 0; d < 7; d++) {
           const { data: dayData, error: dayErr } = await supabase.from('workout_days').insert({
             program_id: program.id,
             week_number: week,
@@ -142,10 +158,11 @@ async function main() {
 
         // Assign 2 exercises per day (rotate through pool)
         const weekExs = []
-        for (let d = 0; d < 4; d++) {
-          const baseIdx = ((week - 1) * 8 + d * 2) % exercisePool.length
-          weekExs.push({ ...exercisePool[baseIdx % exercisePool.length], day_id: insertedDays[d].id })
-          weekExs.push({ ...exercisePool[(baseIdx + 1) % exercisePool.length], day_id: insertedDays[d].id })
+        for (let d = 0; d < 7; d++) {
+          const baseIdx = ((week - 1) * 14 + d * 2) % exercisePool.length
+          const ex1 = { ...exercisePool[baseIdx % exercisePool.length], day_id: insertedDays[d].id }
+          const ex2 = { ...exercisePool[(baseIdx + 1) % exercisePool.length], day_id: insertedDays[d].id }
+          weekExs.push(ex1, ex2)
         }
 
         const { error: exErr } = await supabase.from('exercises').insert(
