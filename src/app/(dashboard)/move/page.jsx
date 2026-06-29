@@ -16,6 +16,8 @@ import {
   createWorkout, upsertUserWorkoutProgress,
 } from '@/db';
 
+const DAY_NAMES = ['Full Body Strength', 'Cardio & Conditioning', 'Mobility & Recovery', 'Power & Explosiveness', 'Core & Stability', 'Active Recovery', 'Full Body Endurance']
+
 const MovePage = () => {
   const { currentUser } = useAuth();
   const router = useRouter();
@@ -28,9 +30,9 @@ const MovePage = () => {
   const [loading, setLoading] = useState(true);
   const [checkedExercises, setCheckedExercises] = useState({});
   const [completing, setCompleting] = useState(false);
-  const [completed, setCompleted] = useState(false);
-  const [expandedDays, setExpandedDays] = useState({});
-  const [expandedWeeks, setExpandedWeeks] = useState({});
+  const [completedDays, setCompletedDays] = useState({});
+  const [expandedWeek, setExpandedWeek] = useState(null);
+  const [expandedDay, setExpandedDay] = useState(null);
 
   useEffect(() => {
     document.title = 'MOVE | Limitless Motion';
@@ -72,20 +74,18 @@ const MovePage = () => {
 
   useEffect(() => {
     if (days.length > 0) {
-      const dayExp = {};
-      days.forEach(d => { dayExp[d.id] = true });
-      setExpandedDays(dayExp);
       const weekNums = [...new Set(days.map(d => d.week_number))];
-      const weekExp = {};
-      weekNums.forEach(w => { weekExp[w] = true });
-      setExpandedWeeks(weekExp);
+      if (weekNums.length > 0) setExpandedWeek(weekNums[0]);
+      setExpandedDay(null);
     }
   }, [days]);
 
   async function loadWorkoutData(programId) {
     setLoading(true);
     setCheckedExercises({});
-    setCompleted(false);
+    setCompletedDays({});
+    setExpandedWeek(null);
+    setExpandedDay(null);
     try {
       const [dayRecords, exRecords] = await Promise.all([
         getWorkoutDays(programId),
@@ -93,13 +93,8 @@ const MovePage = () => {
       ]);
       setDays(dayRecords || []);
       const mapped = (exRecords || []).map(e => ({
-        id: e.id,
-        name: e.exercise_name,
-        sets: e.sets,
-        reps: e.reps,
-        focus: e.muscle_groups,
-        tips: e.form_tips,
-        day_id: e.day_id,
+        id: e.id, name: e.exercise_name, sets: e.sets,
+        reps: e.reps, focus: e.muscle_groups, tips: e.form_tips, day_id: e.day_id,
       }));
       setExercises(mapped);
     } catch (e) {
@@ -116,11 +111,12 @@ const MovePage = () => {
   }
 
   function toggleWeek(weekNum) {
-    setExpandedWeeks(prev => ({ ...prev, [weekNum]: !prev[weekNum] }));
+    setExpandedWeek(prev => prev === weekNum ? null : weekNum);
+    setExpandedDay(null);
   }
 
   function toggleDay(dayId) {
-    setExpandedDays(prev => ({ ...prev, [dayId]: !prev[dayId] }));
+    setExpandedDay(prev => prev === dayId ? null : dayId);
   }
 
   function toggleExercise(exId) {
@@ -140,7 +136,10 @@ const MovePage = () => {
       return;
     }
     const dayExs = dayExercises(dayId)
-    if (!dayExs || dayExs.length === 0) return;
+    if (!dayExs || dayExs.length === 0) {
+      toast.error('No exercises found for this day');
+      return;
+    }
 
     const allChecked = dayExs.every(ex => checkedExercises[ex.id]);
     if (!allChecked) {
@@ -153,25 +152,25 @@ const MovePage = () => {
       const today = new Date().toISOString().split('T')[0];
       for (const ex of dayExs) {
         await createWorkout({
-          user_id: currentUser.id,
-          exercise_name: ex.name,
-          date: today,
-          sets: ex.sets || 1,
-          reps: ex.reps || '1',
+          user_id: currentUser.id, exercise_name: ex.name, date: today,
+          sets: ex.sets || 1, reps: ex.reps || '1',
         });
       }
 
       if (selectedProgram) {
         await upsertUserWorkoutProgress(currentUser.id, {
-          program_id: selectedProgram,
-          current_day: 1,
+          program_id: selectedProgram, current_day: 1,
           completed_exercises: dayExs.map(e => e.name),
         });
       }
 
-      setCompleted(true);
-      setCheckedExercises({});
-      toast.success('Workout Complete! Great work.');
+      setCompletedDays(prev => ({ ...prev, [dayId]: true }));
+      setCheckedExercises(prev => {
+        const next = { ...prev };
+        dayExs.forEach(ex => delete next[ex.id]);
+        return next;
+      });
+      toast.success('Day Complete! Great work.');
     } catch (e) {
       console.error('Failed to save workout:', e);
       toast.error('Failed to save workout.');
@@ -181,13 +180,10 @@ const MovePage = () => {
 
   const totalExercises = exercises.length;
   const checkedCount = Object.keys(checkedExercises).length;
-  const allChecked = totalExercises > 0 && exercises.every(ex => checkedExercises[ex.id]);
   const currentProgram = programs.find(p => p.id === selectedProgram);
 
-  // Group days by week_number
   const weekNumbers = [...new Set(days.map(d => d.week_number))].sort((a, b) => a - b);
 
-  // Group exercises by day_id
   const exercisesByDay = {};
   exercises.forEach(ex => {
     const key = ex.day_id || 'ungrouped';
@@ -195,9 +191,14 @@ const MovePage = () => {
     exercisesByDay[key].push(ex);
   });
 
-  // Get days in a week, sorted by day_of_week
   function getDaysForWeek(weekNum) {
     return days.filter(d => d.week_number === weekNum).sort((a, b) => a.day_of_week - b.day_of_week);
+  }
+
+  function getDayName(day, weekNum) {
+    if (day.day_name && !day.day_name.includes('Week')) return day.day_name
+    const idx = (day.day_of_week || 1) - 1
+    return DAY_NAMES[idx] || `Day ${day.day_of_week}`
   }
 
   return (
@@ -281,11 +282,6 @@ const MovePage = () => {
                       <span className="flex items-center gap-1.5 text-sm font-medium bg-background px-3 py-1.5 rounded-lg border border-border">
                         <Activity className="w-4 h-4 text-muted-foreground" /> {checkedCount}/{totalExercises}
                       </span>
-                      {completed && (
-                        <Badge className="bg-green-500/15 text-green-600 border-green-500/30">
-                          <CheckCircle className="w-3 h-3 mr-1" /> Complete
-                        </Badge>
-                      )}
                     </div>
                     {currentProgram?.description && (
                       <p className="text-sm text-muted-foreground">{currentProgram.description}</p>
@@ -298,7 +294,8 @@ const MovePage = () => {
                     const weekDays = getDaysForWeek(weekNum);
                     const weekExIds = weekDays.flatMap(d => (exercisesByDay[d.id] || []).map(ex => ex.id));
                     const weekChecked = weekExIds.filter(id => checkedExercises[id]).length;
-                    const isWeekExpanded = expandedWeeks[weekNum];
+                    const weekDoneDays = weekDays.filter(d => completedDays[d.id]).length;
+                    const isWeekExpanded = expandedWeek === weekNum;
 
                     return (
                       <div key={weekNum} className="border border-border rounded-2xl overflow-hidden bg-background shadow-sm">
@@ -313,11 +310,14 @@ const MovePage = () => {
                             </div>
                             <div className="text-left">
                               <h3 className="font-bold text-lg text-foreground">Week {weekNum}</h3>
-                              <p className="text-xs text-muted-foreground">{weekDays.length} days &bull; {weekExIds.length} movements &bull; {weekChecked}/{weekExIds.length} complete</p>
+                              <p className="text-xs text-muted-foreground">
+                                {weekDays.length} days &bull; {weekExIds.length} movements &bull;
+                                {weekDoneDays > 0 ? ` ${weekDoneDays}/${weekDays.length} days done` : ` ${weekChecked}/${weekExIds.length} checked`}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {weekChecked === weekExIds.length && weekExIds.length > 0 && (
+                            {weekDoneDays === weekDays.length && weekDays.length > 0 && (
                               <CheckCircle className="w-5 h-5 text-green-500" />
                             )}
                             {isWeekExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
@@ -336,7 +336,8 @@ const MovePage = () => {
                                   const dayExs = exercisesByDay[day.id] || [];
                                   if (dayExs.length === 0) return null;
                                   const dayChecked = dayExs.filter(ex => checkedExercises[ex.id]).length;
-                                  const isDayExpanded = expandedDays[day.id];
+                                  const isDayExpanded = expandedDay === day.id;
+                                  const dayDone = completedDays[day.id];
 
                                   return (
                                     <div key={day.id} className="border border-border rounded-xl overflow-hidden">
@@ -348,18 +349,23 @@ const MovePage = () => {
                                         <div className="flex items-center gap-2.5">
                                           <Dumbbell className="w-4 h-4 text-[hsl(var(--brand-move))]" />
                                           <div className="text-left">
-                                            <h4 className="font-semibold text-sm text-foreground">{day.day_name.replace(`Week ${weekNum} - `, '')}</h4>
-                                            <p className="text-xs text-muted-foreground">{dayExs.length} movements &bull; {dayChecked}/{dayExs.length} complete</p>
+                                            <h4 className="font-semibold text-sm text-foreground">
+                                              {dayDone && <CheckCircle className="w-3.5 h-3.5 text-green-500 inline mr-1.5" />}
+                                              {getDayName(day, weekNum)}
+                                            </h4>
+                                            <p className="text-xs text-muted-foreground">
+                                              {dayDone ? 'Completed' : `${dayExs.length} movements \u2022 ${dayChecked}/${dayExs.length} checked`}
+                                            </p>
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                          {dayChecked === dayExs.length && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                          {dayDone && <CheckCircle className="w-4 h-4 text-green-500" />}
                                           {isDayExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                                         </div>
                                       </button>
 
                                       <AnimatePresence>
-                                        {isDayExpanded && (
+                                        {isDayExpanded && !dayDone && (
                                           <motion.div
                                             initial={{ height: 0, opacity: 0 }}
                                             animate={{ height: 'auto', opacity: 1 }}
@@ -375,7 +381,7 @@ const MovePage = () => {
                                                     className={`border rounded-xl p-3.5 flex flex-col cursor-pointer transition-colors ${
                                                       isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
                                                     }`}
-                                                    onClick={() => !completed && toggleExercise(ex.id)}
+                                                    onClick={() => toggleExercise(ex.id)}
                                                   >
                                                     <div className="flex justify-between items-start mb-2">
                                                       <div className="flex items-center gap-2">
@@ -407,39 +413,32 @@ const MovePage = () => {
                                                 );
                                               })}
 
-                                              {!completed && (
-                                                <div className="flex justify-end col-span-full pt-1">
-                                                  <Button
-                                                    size="sm"
-                                                    disabled={!dayExs.every(ex => checkedExercises[ex.id]) || completing}
-                                                    onClick={handleComplete}
-                                                    className="bg-[hsl(var(--brand-move))] hover:bg-[hsl(var(--brand-move))/90] text-white font-bold gap-2"
-                                                  >
-                                                    {completing ? (
-                                                      <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-                                                    ) : (
-                                                      <><Trophy className="w-4 h-4" /> Complete Workout</>
-                                                    )}
-                                                  </Button>
-                                                </div>
-                                              )}
-
-                                              {completed && (
-                                                <div className="flex justify-end col-span-full pt-1">
-                                                  <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => router.push('/track')}
-                                                    className="gap-2 font-semibold"
-                                                  >
-                                                    View Progress <ArrowRight className="w-4 h-4" />
-                                                  </Button>
-                                                </div>
-                                              )}
+                                              <div className="flex justify-end col-span-full pt-1">
+                                                <Button
+                                                  size="sm"
+                                                  disabled={!dayExs.every(ex => checkedExercises[ex.id]) || completing}
+                                                  onClick={() => handleComplete(day.id)}
+                                                  className="bg-[hsl(var(--brand-move))] hover:bg-[hsl(var(--brand-move))/90] text-white font-bold gap-2"
+                                                >
+                                                  {completing ? (
+                                                    <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                                                  ) : (
+                                                    <><Trophy className="w-4 h-4" /> Complete Workout</>
+                                                  )}
+                                                </Button>
+                                              </div>
                                             </div>
                                           </motion.div>
                                         )}
                                       </AnimatePresence>
+
+                                      {dayDone && (
+                                        <div className="border-t border-border px-4 py-3 text-center">
+                                          <span className="text-sm text-green-600 font-medium flex items-center justify-center gap-1.5">
+                                            <CheckCircle className="w-4 h-4" /> Day Completed
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}
@@ -463,7 +462,7 @@ const MovePage = () => {
                               className={`border rounded-xl p-3.5 flex flex-col cursor-pointer transition-colors ${
                                 isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
                               }`}
-                              onClick={() => !completed && toggleExercise(ex.id)}
+                              onClick={() => toggleExercise(ex.id)}
                             >
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-2">
@@ -488,8 +487,6 @@ const MovePage = () => {
                       </div>
                     </div>
                   )}
-
-
                 </div>
               </div>
             </motion.div>
