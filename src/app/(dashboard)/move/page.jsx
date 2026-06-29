@@ -75,8 +75,9 @@ const MovePage = () => {
       const dayExp = {};
       days.forEach(d => { dayExp[d.id] = true });
       setExpandedDays(dayExp);
+      const weekNums = [...new Set(days.map(d => d.week_number))];
       const weekExp = {};
-      weeks.forEach(w => { weekExp[w] = true });
+      weekNums.forEach(w => { weekExp[w] = true });
       setExpandedWeeks(weekExp);
     }
   }, [days]);
