@@ -220,7 +220,7 @@ const TrackPage = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => { setShowAddPR(true); setEditingPR(null); setPrForm({ name: '', value: '', unit: 'lbs', date: '' }); }}
-                    className="shrink-0"
+                    className="shrink-0 text-foreground"
                   >
                     <Plus className="w-4 h-4" />
                   </Button>

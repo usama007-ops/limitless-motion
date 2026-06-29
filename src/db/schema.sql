@@ -130,7 +130,8 @@ create policy "Admins can delete workout days"
 -- 5. EXERCISES
 create table if not exists public.exercises (
   id uuid primary key default gen_random_uuid(),
-  day_id uuid references public.workout_days(id) on delete cascade not null,
+  program_id uuid references public.workout_programs(id) on delete cascade,
+  day_id uuid references public.workout_days(id) on delete cascade,
   exercise_name text not null,
   sets numeric not null check (sets >= 1),
   reps text,
@@ -142,6 +143,8 @@ create table if not exists public.exercises (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+alter table public.exercises add column if not exists program_id uuid references public.workout_programs(id) on delete cascade;
 
 alter table public.exercises enable row level security;
 
@@ -743,6 +746,7 @@ create index if not exists idx_workouts_user_id on public.workouts(user_id);
 create index if not exists idx_workouts_date on public.workouts(date desc);
 create index if not exists idx_workout_days_program_id on public.workout_days(program_id);
 create index if not exists idx_exercises_day_id on public.exercises(day_id);
+create index if not exists idx_exercises_program_id on public.exercises(program_id);
 create index if not exists idx_user_workout_progress_user_id on public.user_workout_progress(user_id);
 create index if not exists idx_meal_plans_user_id on public.meal_plans(user_id);
 create index if not exists idx_macro_goals_user_id on public.macro_goals(user_id);

@@ -71,7 +71,7 @@ const SuccessStory = ({ story, onClick }) => {
             <Progress value={story.workoutConsistency} className="h-1.5 bg-muted" indicatorClassName="bg-primary" />
           </div>
 
-          <Button variant="ghost" className="w-full justify-between group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+          <Button variant="ghost" className="w-full justify-between group-hover:bg-primary/5 group-hover:text-primary text-foreground transition-colors">
             View Full Story
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Button>

@@ -10,12 +10,12 @@ import { adminUpdate } from '@/lib/adminDb'
 const fields = [
   { name: 'name', label: 'Program Name', type: 'text', required: true },
   { name: 'description', label: 'Description', type: 'textarea', rows: 4 },
-  { name: 'goal', label: 'Goal', type: 'text' },
+  { name: 'goal', label: 'Goal', type: 'select', options: ['Build Strength', 'Lose Weight', 'Improve Flexibility', 'Increase Endurance', 'General Fitness', 'Muscle Tone', 'Weight Management'], required: true },
   { name: 'difficulty', label: 'Difficulty', type: 'select', options: ['beginner', 'intermediate', 'advanced'], required: true },
   { name: 'category', label: 'Category', type: 'select', options: ['burn', 'move', 'think', 'community', 'align'], required: true },
   { name: 'workout_type', label: 'Workout Type', type: 'select', options: ['strength', 'cardio', 'flexibility', 'mindfulness', 'mobility', 'hiit', 'functional'] },
   { name: 'session_duration', label: 'Session Duration (min)', type: 'number' },
-  { name: 'target_audience', label: 'Target Audience', type: 'text' },
+  { name: 'target_audience', label: 'Target Audience', type: 'select', options: ['All Levels', 'Beginners', 'Intermediate', 'Advanced', 'Women', 'Men', 'Seniors'] },
   { name: 'social', label: 'Social', type: 'select', options: ['true', 'false'] },
 ]
 

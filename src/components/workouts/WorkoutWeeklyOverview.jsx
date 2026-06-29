@@ -64,7 +64,7 @@ const WorkoutWeeklyOverview = ({ programId: propProgramId, onBack, onSelectDay }
 
   return (
     <div className="space-y-10">
-      <Button variant="ghost" onClick={handleBack} className="mb-2 pl-0 hover:bg-transparent hover:text-primary transition-colors">
+      <Button variant="ghost" onClick={handleBack} className="mb-2 pl-0 hover:bg-transparent hover:text-primary text-foreground transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Programs
       </Button>
 
@@ -131,7 +131,7 @@ const WorkoutWeeklyOverview = ({ programId: propProgramId, onBack, onSelectDay }
                       </div>
 
                       <div className="flex-shrink-0 sm:ml-auto">
-                        <Button variant="ghost" size="icon" className="group-hover:bg-primary group-hover:text-primary-foreground rounded-full h-12 w-12 transition-all shadow-sm">
+                        <Button variant="ghost" size="icon" className="group-hover:bg-primary group-hover:text-primary-foreground text-foreground rounded-full h-12 w-12 transition-all shadow-sm">
                           <PlayCircle className="w-6 h-6" />
                         </Button>
                       </div>

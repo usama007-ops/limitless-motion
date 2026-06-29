@@ -32,7 +32,7 @@ const AlignPage = () => {
             <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none mb-6 uppercase tracking-widest font-bold">
               <Target className="w-4 h-4 mr-2 inline" /> Mental & Physical Harmony
             </Badge>
-            <h1 className="heading-display text-background mb-6">Find Your Balance.</h1>
+            <h1 className="heading-display text-white mb-6">Find Your Balance.</h1>
             <p className="text-xl md:text-2xl font-medium opacity-90 text-background/80">
               Align your body and mind through restorative flows and thought-provoking audio guidance.
             </p>

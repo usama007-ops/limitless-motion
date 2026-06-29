@@ -32,7 +32,7 @@ const BurnPage = () => {
             <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none mb-6 uppercase tracking-widest font-bold">
               <Flame className="w-4 h-4 mr-2 inline" /> High Intensity
             </Badge>
-            <h1 className="heading-display text-background mb-6">Push Your Limits.</h1>
+            <h1 className="heading-display text-white mb-6">Push Your Limits.</h1>
             <p className="text-xl md:text-2xl font-medium opacity-90 text-background/80">
               Ignite your metabolism with high-intensity interval training, metabolic conditioning, and cardio circuits designed to build unstoppable endurance.
             </p>

@@ -73,6 +73,31 @@ export async function getWorkoutDayByProgramAndDay(programId, dayOfWeek) {
 
 // ─── Exercises ───
 
+export async function getExercises() {
+  return getOrSet(cacheKey(CACHE_PREFIX, 'all-exercises'), async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*, workout_programs(name)')
+      .order('created_at')
+    if (error) throw error
+    return data
+  }, TTL.EXERCISES)
+}
+
+export async function getExercisesByProgram(programId) {
+  return getOrSet(cacheKey(CACHE_PREFIX, 'program-exercises', programId), async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*')
+      .eq('program_id', programId)
+      .order('created_at')
+    if (error) throw error
+    return data
+  }, TTL.EXERCISES)
+}
+
 export async function getExercisesByDay(dayId) {
   return getOrSet(cacheKey(CACHE_PREFIX, 'exercises', dayId), async () => {
     const supabase = createClient()

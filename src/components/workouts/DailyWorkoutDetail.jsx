@@ -62,7 +62,7 @@ const DailyWorkoutDetail = ({ dayId: propDayId, onBack }) => {
 
   return (
     <div className="space-y-10 pb-12">
-      <Button variant="ghost" onClick={handleBack} className="pl-0 hover:bg-transparent hover:text-primary transition-colors">
+      <Button variant="ghost" onClick={handleBack} className="pl-0 hover:bg-transparent hover:text-primary text-foreground transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to {programName}
       </Button>
 
