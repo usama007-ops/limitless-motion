@@ -132,14 +132,17 @@ const MovePage = () => {
     });
   }
 
-  const handleComplete = useCallback(async () => {
+  const dayExercises = useCallback((dayId) => exercises.filter(ex => ex.day_id === dayId), [exercises])
+
+  const handleComplete = useCallback(async (dayId) => {
     if (!currentUser) {
       toast.error('Please log in to track your workout');
       return;
     }
-    if (!exercises || exercises.length === 0) return;
+    const dayExs = dayExercises(dayId)
+    if (!dayExs || dayExs.length === 0) return;
 
-    const allChecked = exercises.every(ex => checkedExercises[ex.id]);
+    const allChecked = dayExs.every(ex => checkedExercises[ex.id]);
     if (!allChecked) {
       toast.error('Complete all movements or uncheck skipped ones');
       return;
@@ -148,7 +151,7 @@ const MovePage = () => {
     setCompleting(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      for (const ex of exercises) {
+      for (const ex of dayExs) {
         await createWorkout({
           user_id: currentUser.id,
           exercise_name: ex.name,
@@ -162,7 +165,7 @@ const MovePage = () => {
         await upsertUserWorkoutProgress(currentUser.id, {
           program_id: selectedProgram,
           current_day: 1,
-          completed_exercises: exercises.map(e => e.name),
+          completed_exercises: dayExs.map(e => e.name),
         });
       }
 
@@ -174,7 +177,7 @@ const MovePage = () => {
       toast.error('Failed to save workout.');
     }
     setCompleting(false);
-  }, [currentUser, checkedExercises, exercises, selectedProgram]);
+  }, [currentUser, checkedExercises, selectedProgram, dayExercises]);
 
   const totalExercises = exercises.length;
   const checkedCount = Object.keys(checkedExercises).length;
@@ -222,8 +225,8 @@ const MovePage = () => {
                     type="button"
                     className={`px-5 py-2.5 rounded-md text-sm font-bold transition-all duration-200 ${
                       active
-                        ? 'bg-white text-[hsl(var(--brand-move))] shadow-md'
-                        : 'border border-white/50 bg-transparent text-black hover:bg-white/15'
+                        ? 'bg-white text-black shadow-md'
+                        : 'border border-white/50 bg-transparent text-white hover:bg-white/15'
                     }`}
                     onClick={() => setDifficulty(active ? null : level)}
                   >
