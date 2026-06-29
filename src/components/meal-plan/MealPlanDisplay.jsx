@@ -105,12 +105,14 @@ const MealPlanDisplay = forwardRef(({ plan, targetMacros, category }, ref) => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-2xl font-extrabold tracking-tight">Week {week.weekNumber}</h3>
-                  <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1 text-sm text-muted-foreground font-semibold">
-                    <span>Avg Cal: {week.weeklyAverages.calories}</span>
-                    <span>Pro: {week.weeklyAverages.protein}g</span>
-                    <span>Carb: {week.weeklyAverages.carbs}g</span>
-                    <span>Fat: {week.weeklyAverages.fats}g</span>
-                  </div>
+                  {week.weeklyAverages && (
+                    <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1 text-sm text-muted-foreground font-semibold">
+                      <span>Avg Cal: {week.weeklyAverages.calories}</span>
+                      <span>Pro: {week.weeklyAverages.protein}g</span>
+                      <span>Carb: {week.weeklyAverages.carbs}g</span>
+                      <span>Fat: {week.weeklyAverages.fats}g</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </AccordionTrigger>

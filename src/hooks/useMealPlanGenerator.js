@@ -108,7 +108,23 @@ export const useMealPlanGenerator = () => {
 
           weekDays.push({ dayNumber: d, meals: dailyMeals, totals: dailyTotals });
         }
-        generatedPlan.push({ weekNumber: w, days: weekDays });
+        const weekTotals = weekDays.reduce((acc, day) => {
+          acc.calories += day.totals.calories;
+          acc.protein += day.totals.protein;
+          acc.carbs += day.totals.carbs;
+          acc.fats += day.totals.fats;
+          return acc;
+        }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+        generatedPlan.push({
+          weekNumber: w,
+          days: weekDays,
+          weeklyAverages: {
+            calories: Math.round(weekTotals.calories / 7),
+            protein: Math.round(weekTotals.protein / 7),
+            carbs: Math.round(weekTotals.carbs / 7),
+            fats: Math.round(weekTotals.fats / 7),
+          },
+        });
       }
 
       await new Promise(res => setTimeout(res, 800));

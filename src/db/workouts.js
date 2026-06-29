@@ -342,8 +342,6 @@ export async function createWorkoutVideo(video) {
   return data
 }
 
-// ─── Recovery Flows ───
-
 // ─── Workout Challenges ───
 
 export async function getWorkoutChallenges() {
@@ -354,6 +352,40 @@ export async function getWorkoutChallenges() {
     return data
   }, TTL.CHALLENGES)
 }
+
+export async function joinChallenge(userId, challengeId) {
+  const supabase = createClient()
+  const { data: existing } = await supabase
+    .from('challenge_participants')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('challenge_id', challengeId)
+    .maybeSingle()
+  if (existing) throw new Error('Already joined this challenge')
+
+  const { data, error } = await supabase
+    .from('challenge_participants')
+    .insert({
+      user_id: userId,
+      challenge_id: challengeId,
+      joined_date: localDateStr(),
+      completion_status: 'in-progress',
+      progress_percent: 0,
+    })
+    .select()
+    .single()
+  if (error) throw error
+
+  const { data: challenge } = await supabase.from('workout_challenges').select('participant_count').eq('id', challengeId).single()
+  if (challenge) {
+    await supabase.from('workout_challenges').update({ participant_count: (challenge.participant_count || 0) + 1 }).eq('id', challengeId)
+  }
+
+  await invalidatePrefix(CACHE_PREFIX)
+  return data
+}
+
+// ─── Recovery Flows ───
 
 export async function getRecoveryFlows() {
   return getOrSet(cacheKey(CACHE_PREFIX, 'recovery'), async () => {

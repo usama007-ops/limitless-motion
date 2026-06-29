@@ -27,7 +27,7 @@ const RecoveryFlowLibrary = () => {
   if (loading) {
     return (
       <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl break-inside-avoid" />)}
+        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-64 w-full rounded-2xl break-inside-avoid " />)}
       </div>
     );
   }
@@ -56,7 +56,7 @@ const RecoveryFlowLibrary = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="break-inside-avoid"
+            className="break-inside-avoid h-full"
           >
             <Card className="h-full bg-card hover:shadow-lg transition-all duration-300 border-border/60 rounded-2xl overflow-hidden group">
               <CardHeader className="bg-muted/30 pb-5 border-b border-border/50 relative overflow-hidden">

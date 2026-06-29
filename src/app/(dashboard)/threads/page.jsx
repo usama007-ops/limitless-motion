@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { getWorkoutChallenges } from '@/db';
+import { getWorkoutChallenges, joinChallenge } from '@/db';
 
 const fallbackChallenges = [
   {
@@ -83,11 +83,17 @@ const ThreadsPage = () => {
       return;
     }
     try {
+      await joinChallenge(currentUser.id, challengeId);
       toast.success("Successfully joined the challenge!");
       setIsModalOpen(false);
+      setChallenges(prev => prev.map(c =>
+        c.id === challengeId ? { ...c, participantCount: (c.participantCount || 0) + 1 } : c
+      ));
     } catch (error) {
       console.error("Error joining challenge:", error);
-      toast.error("Failed to join challenge. You might already be participating.");
+      toast.error(error.message === 'Already joined this challenge'
+        ? 'You are already participating in this challenge.'
+        : 'Failed to join challenge.');
     }
   };
 
@@ -115,8 +121,8 @@ const ThreadsPage = () => {
           </div>
         </motion.div>
 
-        <div className="mb-12">
-          <h2 className="heading-section mb-8">Active Challenges</h2>
+        <div className="mb-12 mt-[96px]">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-8">Active Challenges</h2>
 
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
@@ -133,7 +139,7 @@ const ThreadsPage = () => {
                   <Card className="h-full flex flex-col hover:shadow-lg transition-all duration-300 border-border/60">
                     <CardHeader>
                       <div className="flex justify-between items-start mb-2">
-                        <Badge variant={challenge.status === 'active' ? 'default' : 'secondary'} className={challenge.status === 'active' ? 'bg-[hsl(var(--brand-threads))]' : ''}>
+                        <Badge variant={challenge.status === 'active' ? 'default' : 'secondary'} className={challenge.status === 'active' ? 'text-black bg-[hsl(var(--brand-threads))]' : ''}>
                           {challenge.status}
                         </Badge>
                         <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
