@@ -38,6 +38,7 @@ export async function getWorkoutDays(programId) {
       .from('workout_days')
       .select('*, workout_programs(*)')
       .eq('program_id', programId)
+      .order('week_number')
       .order('day_of_week')
     if (error) throw error
     return data

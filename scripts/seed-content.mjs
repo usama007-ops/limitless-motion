@@ -88,37 +88,23 @@ async function main() {
     { name: 'Mindful Movement', description: 'Low-impact mobility and mindfulness for recovery days.', goal: 'Improve flexibility', difficulty: 'beginner', category: 'think', workout_type: 'mindfulness', session_duration: 30, target_audience: 'all', social: false },
   ])
 
-  // ─── Workout Days + Exercises for each program ───
-  console.log('Inserting workout_days & exercises...')
+  // ─── Workout Weeks + Days + Exercises for each program ───
+  console.log('Inserting workout weeks, days & exercises...')
   const { data: progList } = await supabase.from('workout_programs').select('id')
   if (progList && progList.length > 0) {
     for (const program of progList) {
-      const { count: dayCount } = await supabase.from('workout_days').select('*', { count: 'exact', head: true }).eq('program_id', program.id)
-      if (dayCount > 0) {
-        console.log(`  SKIP (workout_days already exist for program ${program.id})`)
+      const { count: weekCheck } = await supabase.from('workout_days').select('*', { count: 'exact', head: true }).eq('program_id', program.id).eq('week_number', 2)
+      if (weekCheck > 0) {
+        console.log(`  SKIP (weeks already exist for program ${program.id})`)
         continue
       }
 
-      // Insert 4 workout days
+      // Delete old data for this program
+      await supabase.from('exercises').delete().eq('program_id', program.id)
+      await supabase.from('workout_days').delete().eq('program_id', program.id)
+
       const dayNames = ['Full Body Strength', 'Cardio & Conditioning', 'Mobility & Recovery', 'Power & Explosiveness']
-      const insertedDays = []
-      for (let d = 0; d < 4; d++) {
-        const { data: dayData, error: dayErr } = await supabase.from('workout_days').insert({
-          program_id: program.id,
-          day_of_week: d + 1,
-          day_name: `Day ${d + 1} - ${dayNames[d]}`,
-          focus_area: dayNames[d],
-          estimated_duration: 40,
-        }).select().single()
-        if (dayErr) { console.error(`  FAILED to insert day for ${program.id}:`, dayErr.message); break }
-        insertedDays.push(dayData)
-      }
-      if (insertedDays.length === 0) continue
-
-      // Delete previously seeded exercises without day_id for this program
-      await supabase.from('exercises').delete().eq('program_id', program.id).is('day_id', null)
-
-      const exerciseSets = [
+      const exercisePool = [
         { exercise_name: 'Turkish Get-Ups', sets: 3, reps: '5/side', muscle_groups: 'Full Body', form_tips: 'Keep eyes on the bell, move deliberately.' },
         { exercise_name: 'Kettlebell Deadlifts', sets: 4, reps: '10', muscle_groups: 'Posterior Chain', form_tips: 'Hinge at hips, maintain neutral spine.' },
         { exercise_name: 'Farmer Carries', sets: 4, reps: '40m', muscle_groups: 'Core/Grip', form_tips: 'Tall posture, braced core.' },
@@ -127,17 +113,50 @@ async function main() {
         { exercise_name: 'World\'s Greatest Stretch', sets: 2, reps: '5/side', muscle_groups: 'Hips/T-Spine', form_tips: 'Breathe into the rotation.' },
         { exercise_name: 'Cossack Squats', sets: 3, reps: '8/side', muscle_groups: 'Hips/Legs', form_tips: 'Keep heel down on straight leg.' },
         { exercise_name: 'Downward Dog to Cobra', sets: 3, reps: '10', muscle_groups: 'Full Body', form_tips: 'Flow smoothly with breath.' },
+        { exercise_name: 'Squat to Press', sets: 4, reps: '12', muscle_groups: 'Full Body', form_tips: 'Keep core tight, press overhead.' },
+        { exercise_name: 'Lunges with Twist', sets: 3, reps: '10/side', muscle_groups: 'Legs/Core', form_tips: 'Twist toward front leg at bottom.' },
+        { exercise_name: 'Plank to Downward Dog', sets: 3, reps: '12', muscle_groups: 'Core/Shoulders', form_tips: 'Move slowly with control.' },
+        { exercise_name: 'Side Plank Dips', sets: 3, reps: '10/side', muscle_groups: 'Obliques', form_tips: 'Keep hips stacked.' },
+        { exercise_name: 'Glute Bridges', sets: 4, reps: '15', muscle_groups: 'Glutes', form_tips: 'Drive through heels.' },
+        { exercise_name: 'Superman Hold', sets: 3, reps: '30s', muscle_groups: 'Lower Back', form_tips: 'Lift chest and legs simultaneously.' },
+        { exercise_name: 'Bicycle Crunches', sets: 3, reps: '20', muscle_groups: 'Core', form_tips: 'Elbow to opposite knee.' },
+        { exercise_name: 'Mountain Climbers', sets: 4, reps: '30s', muscle_groups: 'Full Body', form_tips: 'Keep hips low, drive knees.' },
       ]
 
-      // Assign 2 exercises per day
-      const exWithDays = exerciseSets.map((ex, i) => ({
-        ...ex,
-        program_id: program.id,
-        day_id: insertedDays[Math.floor(i / 2)].id,
-      }))
-      const { error: exErr } = await supabase.from('exercises').insert(exWithDays)
-      if (exErr) console.error(`  FAILED to insert exercises for ${program.id}:`, exErr.message)
-      else console.log(`  OK (${exerciseSets.length} exercises across ${insertedDays.length} days for program ${program.id})`)
+      // 4 weeks, each with 4 days, 2 exercises per day
+      for (let week = 1; week <= 4; week++) {
+        const insertedDays = []
+        for (let d = 0; d < 4; d++) {
+          const { data: dayData, error: dayErr } = await supabase.from('workout_days').insert({
+            program_id: program.id,
+            week_number: week,
+            day_of_week: d + 1,
+            day_name: `Week ${week} - Day ${d + 1}: ${dayNames[d]}`,
+            focus_area: dayNames[d],
+            estimated_duration: 40,
+          }).select().single()
+          if (dayErr) { console.error(`  FAILED to insert day for ${program.id}:`, dayErr.message); break }
+          insertedDays.push(dayData)
+        }
+        if (insertedDays.length === 0) break
+
+        // Assign 2 exercises per day (rotate through pool)
+        const weekExs = []
+        for (let d = 0; d < 4; d++) {
+          const baseIdx = ((week - 1) * 8 + d * 2) % exercisePool.length
+          weekExs.push({ ...exercisePool[baseIdx % exercisePool.length], day_id: insertedDays[d].id })
+          weekExs.push({ ...exercisePool[(baseIdx + 1) % exercisePool.length], day_id: insertedDays[d].id })
+        }
+
+        const { error: exErr } = await supabase.from('exercises').insert(
+          weekExs.map(ex => ({ ...ex, program_id: program.id }))
+        )
+        if (exErr) { console.error(`  FAILED to insert exercises for week ${week}:`, exErr.message); break }
+      }
+
+      const { count: exCount } = await supabase.from('exercises').select('*', { count: 'exact', head: true }).eq('program_id', program.id)
+      const { count: dayCount } = await supabase.from('workout_days').select('*', { count: 'exact', head: true }).eq('program_id', program.id)
+      console.log(`  OK (${exCount} exercises across ${dayCount} days in 4 weeks for program ${program.id})`)
     }
   }
 

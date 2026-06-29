@@ -30,6 +30,7 @@ const MovePage = () => {
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [expandedDays, setExpandedDays] = useState({});
+  const [expandedWeeks, setExpandedWeeks] = useState({});
 
   useEffect(() => {
     document.title = 'MOVE | Limitless Motion';
@@ -71,9 +72,12 @@ const MovePage = () => {
 
   useEffect(() => {
     if (days.length > 0) {
-      const expanded = {};
-      days.forEach(d => { expanded[d.id] = true });
-      setExpandedDays(expanded);
+      const dayExp = {};
+      days.forEach(d => { dayExp[d.id] = true });
+      setExpandedDays(dayExp);
+      const weekExp = {};
+      weeks.forEach(w => { weekExp[w] = true });
+      setExpandedWeeks(weekExp);
     }
   }, [days]);
 
@@ -108,6 +112,10 @@ const MovePage = () => {
   async function handleSelectProgram(programId) {
     setSelectedProgram(programId);
     await loadWorkoutData(programId);
+  }
+
+  function toggleWeek(weekNum) {
+    setExpandedWeeks(prev => ({ ...prev, [weekNum]: !prev[weekNum] }));
   }
 
   function toggleDay(dayId) {
@@ -172,6 +180,10 @@ const MovePage = () => {
   const allChecked = totalExercises > 0 && exercises.every(ex => checkedExercises[ex.id]);
   const currentProgram = programs.find(p => p.id === selectedProgram);
 
+  // Group days by week_number
+  const weekNumbers = [...new Set(days.map(d => d.week_number))].sort((a, b) => a - b);
+
+  // Group exercises by day_id
   const exercisesByDay = {};
   exercises.forEach(ex => {
     const key = ex.day_id || 'ungrouped';
@@ -179,9 +191,9 @@ const MovePage = () => {
     exercisesByDay[key].push(ex);
   });
 
-  function getDayName(dayId) {
-    const day = days.find(d => d.id === dayId);
-    return day ? day.day_name : 'Other Movements';
+  // Get days in a week, sorted by day_of_week
+  function getDaysForWeek(weekNum) {
+    return days.filter(d => d.week_number === weekNum).sort((a, b) => a.day_of_week - b.day_of_week);
   }
 
   return (
@@ -255,7 +267,7 @@ const MovePage = () => {
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-sm font-black text-muted-foreground uppercase tracking-widest">
-                        {days.length} Days &bull; {totalExercises} Movements
+                        {weekNumbers.length} Weeks &bull; {days.length} Days &bull; {totalExercises} Movements
                       </span>
                       {currentProgram?.session_duration && (
                         <span className="flex items-center gap-1.5 text-sm font-medium bg-background px-3 py-1.5 rounded-lg border border-border">
@@ -277,80 +289,123 @@ const MovePage = () => {
                   </div>
                 </div>
 
-                <div className="p-4 md:p-6 space-y-4">
-                  {days.map((day) => {
-                    const dayExs = exercisesByDay[day.id] || [];
-                    if (dayExs.length === 0) return null;
-                    const dayChecked = dayExs.filter(ex => checkedExercises[ex.id]).length;
-                    const isExpanded = expandedDays[day.id];
+                <div className="p-4 md:p-6 space-y-6">
+                  {weekNumbers.map(weekNum => {
+                    const weekDays = getDaysForWeek(weekNum);
+                    const weekExIds = weekDays.flatMap(d => (exercisesByDay[d.id] || []).map(ex => ex.id));
+                    const weekChecked = weekExIds.filter(id => checkedExercises[id]).length;
+                    const isWeekExpanded = expandedWeeks[weekNum];
 
                     return (
-                      <div key={day.id} className="border border-border rounded-xl overflow-hidden bg-background">
+                      <div key={weekNum} className="border border-border rounded-2xl overflow-hidden bg-background shadow-sm">
                         <button
                           type="button"
-                          onClick={() => toggleDay(day.id)}
-                          className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
+                          onClick={() => toggleWeek(weekNum)}
+                          className="w-full flex items-center justify-between p-5 bg-muted/20 hover:bg-muted/40 transition-colors"
                         >
                           <div className="flex items-center gap-3">
-                            <Dumbbell className="w-5 h-5 text-[hsl(var(--brand-move))]" />
+                            <div className="w-10 h-10 rounded-full bg-[hsl(var(--brand-move))]/10 flex items-center justify-center">
+                              <span className="text-sm font-black text-[hsl(var(--brand-move))]">W{weekNum}</span>
+                            </div>
                             <div className="text-left">
-                              <h4 className="font-bold text-foreground">{day.day_name}</h4>
-                              <p className="text-xs text-muted-foreground">{dayExs.length} movements &bull; {dayChecked}/{dayExs.length} complete</p>
+                              <h3 className="font-bold text-lg text-foreground">Week {weekNum}</h3>
+                              <p className="text-xs text-muted-foreground">{weekDays.length} days &bull; {weekExIds.length} movements &bull; {weekChecked}/{weekExIds.length} complete</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {dayChecked === dayExs.length && dayExs.length > 0 && (
+                            {weekChecked === weekExIds.length && weekExIds.length > 0 && (
                               <CheckCircle className="w-5 h-5 text-green-500" />
                             )}
-                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                            {isWeekExpanded ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                           </div>
                         </button>
 
                         <AnimatePresence>
-                          {isExpanded && (
+                          {isWeekExpanded && (
                             <motion.div
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              className="border-t border-border"
                             >
-                              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {dayExs.map(ex => {
-                                  const isChecked = !!checkedExercises[ex.id];
+                              <div className="p-4 md:p-5 space-y-3">
+                                {weekDays.map(day => {
+                                  const dayExs = exercisesByDay[day.id] || [];
+                                  if (dayExs.length === 0) return null;
+                                  const dayChecked = dayExs.filter(ex => checkedExercises[ex.id]).length;
+                                  const isDayExpanded = expandedDays[day.id];
+
                                   return (
-                                    <div
-                                      key={ex.id}
-                                      className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-colors ${
-                                        isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
-                                      }`}
-                                      onClick={() => !completed && toggleExercise(ex.id)}
-                                    >
-                                      <div className="flex justify-between items-start mb-3">
+                                    <div key={day.id} className="border border-border rounded-xl overflow-hidden">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleDay(day.id)}
+                                        className="w-full flex items-center justify-between p-3.5 hover:bg-muted/20 transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2.5">
+                                          <Dumbbell className="w-4 h-4 text-[hsl(var(--brand-move))]" />
+                                          <div className="text-left">
+                                            <h4 className="font-semibold text-sm text-foreground">{day.day_name.replace(`Week ${weekNum} - `, '')}</h4>
+                                            <p className="text-xs text-muted-foreground">{dayExs.length} movements &bull; {dayChecked}/{dayExs.length} complete</p>
+                                          </div>
+                                        </div>
                                         <div className="flex items-center gap-2">
-                                          {isChecked ? (
-                                            <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                                          ) : (
-                                            <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
-                                          )}
-                                          <h4 className="font-bold text-lg">{ex.name}</h4>
+                                          {dayChecked === dayExs.length && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                          {isDayExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                                         </div>
-                                        <Badge variant="secondary" className="bg-muted text-muted-foreground shrink-0">{ex.focus}</Badge>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                                        <div className="bg-muted/50 rounded p-2">
-                                          <span className="block text-xs text-muted-foreground uppercase font-bold">Sets</span>
-                                          <span className="font-semibold">{ex.sets}</span>
-                                        </div>
-                                        <div className="bg-muted/50 rounded p-2">
-                                          <span className="block text-xs text-muted-foreground uppercase font-bold">Reps/Time</span>
-                                          <span className="font-semibold">{ex.reps}</span>
-                                        </div>
-                                      </div>
-                                      {ex.tips && (
-                                        <p className="text-sm text-muted-foreground mt-auto bg-[hsl(var(--brand-move))/5] p-2 rounded border border-[hsl(var(--brand-move))/10]">
-                                          <span className="font-semibold text-foreground">Focus:</span> {ex.tips}
-                                        </p>
-                                      )}
+                                      </button>
+
+                                      <AnimatePresence>
+                                        {isDayExpanded && (
+                                          <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="border-t border-border"
+                                          >
+                                            <div className="p-3.5 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                              {dayExs.map(ex => {
+                                                const isChecked = !!checkedExercises[ex.id];
+                                                return (
+                                                  <div
+                                                    key={ex.id}
+                                                    className={`border rounded-xl p-3.5 flex flex-col cursor-pointer transition-colors ${
+                                                      isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
+                                                    }`}
+                                                    onClick={() => !completed && toggleExercise(ex.id)}
+                                                  >
+                                                    <div className="flex justify-between items-start mb-2">
+                                                      <div className="flex items-center gap-2">
+                                                        {isChecked ? (
+                                                          <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                                                        ) : (
+                                                          <Circle className="w-4 h-4 text-muted-foreground shrink-0" />
+                                                        )}
+                                                        <h4 className="font-bold text-sm">{ex.name}</h4>
+                                                      </div>
+                                                      <Badge variant="secondary" className="bg-muted text-muted-foreground shrink-0 text-xs">{ex.focus}</Badge>
+                                                    </div>
+                                                    <div className="flex gap-2 mb-2 text-xs">
+                                                      <div className="bg-muted/50 rounded p-1.5 flex-1 text-center">
+                                                        <span className="block text-xs text-muted-foreground uppercase font-bold">Sets</span>
+                                                        <span className="font-semibold">{ex.sets}</span>
+                                                      </div>
+                                                      <div className="bg-muted/50 rounded p-1.5 flex-1 text-center">
+                                                        <span className="block text-xs text-muted-foreground uppercase font-bold">Reps</span>
+                                                        <span className="font-semibold">{ex.reps}</span>
+                                                      </div>
+                                                    </div>
+                                                    {ex.tips && (
+                                                      <p className="text-xs text-muted-foreground mt-auto bg-[hsl(var(--brand-move))/5] p-1.5 rounded border border-[hsl(var(--brand-move))/10]">
+                                                        <span className="font-semibold text-foreground">Focus:</span> {ex.tips}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
                                     </div>
                                   );
                                 })}
@@ -365,31 +420,31 @@ const MovePage = () => {
                   {exercisesByDay['ungrouped'] && exercisesByDay['ungrouped'].length > 0 && (
                     <div className="border border-dashed border-border rounded-xl p-4 bg-muted/10">
                       <h4 className="font-bold text-sm text-muted-foreground mb-3 uppercase tracking-wider">Other Movements</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                         {exercisesByDay['ungrouped'].map(ex => {
                           const isChecked = !!checkedExercises[ex.id];
                           return (
                             <div
                               key={ex.id}
-                              className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-colors ${
+                              className={`border rounded-xl p-3.5 flex flex-col cursor-pointer transition-colors ${
                                 isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
                               }`}
                               onClick={() => !completed && toggleExercise(ex.id)}
                             >
-                              <div className="flex justify-between items-start mb-3">
+                              <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center gap-2">
-                                  {isChecked ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> : <Circle className="w-5 h-5 text-muted-foreground shrink-0" />}
-                                  <h4 className="font-bold text-lg">{ex.name}</h4>
+                                  {isChecked ? <CheckCircle className="w-4 h-4 text-green-500 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground shrink-0" />}
+                                  <h4 className="font-bold text-sm">{ex.name}</h4>
                                 </div>
-                                <Badge variant="secondary" className="bg-muted text-muted-foreground">{ex.focus}</Badge>
+                                <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">{ex.focus}</Badge>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                                <div className="bg-muted/50 rounded p-2">
+                              <div className="flex gap-2 mb-2 text-xs">
+                                <div className="bg-muted/50 rounded p-1.5 flex-1 text-center">
                                   <span className="block text-xs text-muted-foreground uppercase font-bold">Sets</span>
                                   <span className="font-semibold">{ex.sets}</span>
                                 </div>
-                                <div className="bg-muted/50 rounded p-2">
-                                  <span className="block text-xs text-muted-foreground uppercase font-bold">Reps/Time</span>
+                                <div className="bg-muted/50 rounded p-1.5 flex-1 text-center">
+                                  <span className="block text-xs text-muted-foreground uppercase font-bold">Reps</span>
                                   <span className="font-semibold">{ex.reps}</span>
                                 </div>
                               </div>
