@@ -184,6 +184,7 @@ create table if not exists public.user_workout_progress (
   current_day numeric default 1 check (current_day >= 1),
   start_date date,
   completed_exercises jsonb,
+  completed_days jsonb default '[]'::jsonb,
   weights jsonb,
   notes text,
   created_at timestamptz default now(),

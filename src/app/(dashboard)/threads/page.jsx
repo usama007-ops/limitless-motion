@@ -101,7 +101,7 @@ const ThreadsPage = () => {
       <div className="container-luxury">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="relative rounded-3xl overflow-hidden bg-[hsl(var(--brand-threads))] text-white p-8 md:p-16 mb-16"
+          className="relative rounded-3xl overflow-hidden bg-primary text-primary-foreground p-8 md:p-16 shadow-lg"
         >
           <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
           <div className="relative z-10 max-w-3xl">

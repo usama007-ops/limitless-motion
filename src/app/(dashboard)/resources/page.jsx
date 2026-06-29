@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Headphones, Filter, Loader2, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getVideos, getPodcasts } from '@/db';
@@ -125,19 +126,19 @@ const ResourcesPage = () => {
     <div className="pt-32 pb-24">
       <div className="container-luxury">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto text-center mb-16"
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="relative rounded-3xl overflow-hidden bg-primary text-primary-foreground p-8 md:p-16 shadow-lg mb-16"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-bold tracking-wider uppercase mb-6">
-            <Play size={16} />
-            Limitless Motion Resources
+          <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
+          <div className="relative z-10 text-center max-w-3xl mx-auto">
+            <Badge className="bg-white/20 text-white hover:bg-white/30 border-none mb-6 uppercase tracking-widest font-bold backdrop-blur-sm px-3 py-1.5">
+              <Play size={16} className="mr-2 inline" /> Limitless Motion Resources
+            </Badge>
+            <h1 className="heading-display mb-6">Knowledge Hub</h1>
+            <p className="text-xl md:text-2xl font-medium opacity-90 leading-relaxed">
+              Exclusive video tutorials, coaching insights, and podcasts to accelerate your progress with Limitless Motion.
+            </p>
           </div>
-          <h1 className="heading-display mb-6">Knowledge Hub</h1>
-          <p className="text-xl text-muted-foreground font-light max-w-2xl mx-auto">
-            Exclusive video tutorials, coaching insights, and podcasts to accelerate your progress with Limitless Motion.
-          </p>
         </motion.div>
 
         {loading ? (

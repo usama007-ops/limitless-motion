@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, MessageCircle, Heart, Plus, Loader2, AlertCircle, Trophy } from 'lucide-react';
+import { Sparkles, Heart, MessageCircle, Plus, Loader2, AlertCircle, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import CommunityPostForm from '@/components/community/CommunityPostForm.jsx';
+import CommentSection from '@/components/community/CommentSection.jsx';
 import SuccessStoriesGallery from '@/components/community/SuccessStoriesGallery.jsx';
 import { toast } from 'sonner';
 import { getCommunityPosts, getLatestAffirmation } from '@/db';
@@ -105,12 +106,34 @@ const CommunityPage = () => {
     return () => { cancelled = true; };
   }, []);
 
+  const [expandedComments, setExpandedComments] = useState({});
+
+  const toggleComments = (postId) => {
+    setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
+  };
+
   const handleLike = async (postId, currentLikes) => {
     setPosts(posts.map(p => p.id === postId ? { ...p, likes: (p.likes || 0) + 1 } : p));
   };
 
   const handlePostCreated = () => {
     setShowPostForm(false);
+  };
+
+  const handleRefreshPosts = async (postId) => {
+    try {
+      const fetched = await getCommunityPosts();
+      if (fetched && fetched.length > 0) {
+        const mapped = fetched.map(p => ({
+          ...p,
+          authorName: p.author_name,
+          created: p.date,
+        }));
+        setPosts(mapped);
+        return mapped.find(p => p.id === postId);
+      }
+    } catch { /* fallback to local state */ }
+    return null;
   };
 
   const renderPostCard = (post) => (
@@ -142,11 +165,22 @@ const CommunityPage = () => {
             <Heart size={18} />
             <span className="text-sm font-medium">{post.likes || 0}</span>
           </button>
-          <button className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+          <button
+            onClick={() => toggleComments(post.id)}
+            className={`flex items-center gap-2 transition-colors ${expandedComments[post.id] ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+          >
             <MessageCircle size={18} />
             <span className="text-sm font-medium">{post.comments?.length || 0}</span>
           </button>
         </div>
+
+        <CommentSection
+          postId={post.id}
+          comments={post.comments || []}
+          expanded={expandedComments[post.id]}
+          onToggle={() => toggleComments(post.id)}
+          onRefresh={() => handleRefreshPosts(post.id)}
+        />
       </CardContent>
     </Card>
   );

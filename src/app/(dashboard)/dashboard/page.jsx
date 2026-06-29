@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dumbbell, TrendingUp, Calendar, ArrowRight, Activity, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,12 +45,20 @@ const ClientDashboard = () => {
   return (
     <div className="pt-32 pb-24">
       <div className="container-luxury">
-        <div className="mb-16 border-b border-border pb-8">
-          <h1 className="text-4xl md:text-5xl font-serif font-medium mb-4 text-foreground tracking-tight">
-            Welcome back, <span className="text-primary italic">{currentUser?.name?.split(' ')[0] || 'Member'}</span>
-          </h1>
-          <p className="text-muted-foreground text-lg">Track your progress and continue your Limitless Motion journey.</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="relative rounded-3xl overflow-hidden bg-primary text-primary-foreground p-8 md:p-16 shadow-lg mb-16"
+        >
+          <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
+          <div className="relative z-10">
+            <h1 className="heading-display mb-6">
+              Welcome back, <span className="italic">{currentUser?.name?.split(' ')[0] || 'Member'}</span>
+            </h1>
+            <p className="text-xl md:text-2xl font-medium opacity-90 max-w-2xl leading-relaxed">
+              Track your progress and continue your Limitless Motion journey.
+            </p>
+          </div>
+        </motion.div>
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
@@ -154,7 +164,7 @@ const ClientDashboard = () => {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-primary border border-primary rounded-lg p-8 flex flex-col h-full shadow-sm">
+            <div className="bg-primary border border-primary rounded-lg p-8 flex flex-col shadow-sm">
               <Activity className="text-primary-foreground mb-6" size={28} strokeWidth={1.5} />
               <h3 className="text-xl font-serif font-medium mb-2 text-primary-foreground tracking-wide">Workout Tracker</h3>
               <p className="text-primary-foreground/80 mb-8 text-sm">Log your exercises and track your progress over time.</p>
@@ -165,7 +175,7 @@ const ClientDashboard = () => {
               </Link>
             </div>
 
-            <div className="bg-secondary border border-secondary rounded-lg p-8 flex flex-col h-full shadow-sm">
+            <div className="bg-secondary border border-secondary rounded-lg p-8 flex flex-col shadow-sm">
               <Utensils className="text-secondary-foreground mb-6" size={28} strokeWidth={1.5} />
               <h3 className="text-xl font-serif font-medium mb-2 text-secondary-foreground tracking-wide">Nutrition & Macros</h3>
               <p className="text-secondary-foreground/80 mb-8 text-sm">Calculate your burn and explore tailored meal plans.</p>

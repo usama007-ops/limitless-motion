@@ -25,26 +25,23 @@ const AlignPage = () => {
       <div className="container-luxury">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="relative rounded-3xl overflow-hidden bg-foreground text-background p-8 md:p-16 mb-16"
+          className="relative rounded-3xl overflow-hidden bg-primary text-primary-foreground p-8 md:p-16 shadow-lg"
         >
-          <div className="absolute inset-0 bg-primary/10 mix-blend-overlay pointer-events-none" />
+          <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
           <div className="relative z-10 max-w-3xl">
-            <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none mb-6 uppercase tracking-widest font-bold">
+            <Badge className="bg-white/20 text-white hover:bg-white/30 border-none mb-6 uppercase tracking-widest font-bold backdrop-blur-sm px-3 py-1.5">
               <Target className="w-4 h-4 mr-2 inline" /> Mental & Physical Harmony
             </Badge>
-            <h1 className="heading-display text-white mb-6">Find Your Balance.</h1>
-            <p className="text-xl md:text-2xl font-medium opacity-90 text-background/80">
+            <h1 className="heading-display mb-6">Find Your Balance.</h1>
+            <p className="text-xl md:text-2xl font-medium opacity-90">
               Align your body and mind through restorative flows and thought-provoking audio guidance.
             </p>
           </div>
         </motion.div>
 
-        {isAdmin && (
-          <PodcastUploadForm onUploadSuccess={handleUploadSuccess} />
-        )}
 
-        <div className="mb-12">
-          <h2 className="heading-section mb-8">Audio Guides & Podcasts</h2>
+        <div className="mb-12 mt-[96px]">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 mb-8">Audio Guides & Podcasts</h2>
           <PodcastGallery refreshTrigger={refreshKey} />
         </div>
       </div>

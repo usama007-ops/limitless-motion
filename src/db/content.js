@@ -130,6 +130,72 @@ export async function likePost(postId) {
   return data
 }
 
+// ─── Comments ───
+
+export async function addComment(postId, { authorName, content }) {
+  const supabase = createClient()
+  const { data: post, error: fetchErr } = await supabase
+    .from('community_posts')
+    .select('comments')
+    .eq('id', postId)
+    .single()
+  if (fetchErr) throw fetchErr
+
+  const comment = {
+    id: crypto.randomUUID(),
+    author_name: authorName,
+    content,
+    created: new Date().toISOString(),
+    replies: [],
+  }
+  const comments = [...(post.comments || []), comment]
+  const { error } = await supabase
+    .from('community_posts')
+    .update({ comments })
+    .eq('id', postId)
+  if (error) throw error
+  await invalidatePrefix(CACHE_PREFIX)
+  return comment
+}
+
+export async function addReply(postId, parentCommentId, { authorName, content }) {
+  const supabase = createClient()
+  const { data: post, error: fetchErr } = await supabase
+    .from('community_posts')
+    .select('comments')
+    .eq('id', postId)
+    .single()
+  if (fetchErr) throw fetchErr
+
+  function insertReply(comments, parentId, reply) {
+    return comments.map(c => {
+      if (c.id === parentId) {
+        return { ...c, replies: [...(c.replies || []), reply] }
+      }
+      if (c.replies?.length) {
+        return { ...c, replies: insertReply(c.replies, parentId, reply) }
+      }
+      return c
+    })
+  }
+
+  const reply = {
+    id: crypto.randomUUID(),
+    author_name: authorName,
+    content,
+    created: new Date().toISOString(),
+    replies: [],
+  }
+  const comments = insertReply(post.comments || [], parentCommentId, reply)
+  const { error } = await supabase
+    .from('community_posts')
+    .update({ comments })
+    .eq('id', postId)
+  if (error) throw error
+  await invalidatePrefix(CACHE_PREFIX)
+  return { comments }
+}
+
 // ─── Success Stories ───
 
 export async function getSuccessStories() {

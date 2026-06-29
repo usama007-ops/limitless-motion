@@ -40,6 +40,7 @@ export function cacheKey(prefix, ...parts) {
 }
 
 export async function invalidatePattern(pattern) {
+  if (!redisAvailable) return
   let cursor = 0
   do {
     const [nextCursor, keys] = await redis.scan(cursor, { match: pattern, count: 100 })

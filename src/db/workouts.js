@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabaseClient'
 import { getOrSet, cacheKey, invalidatePrefix, TTL } from '@/lib/cache'
 
+function localDateStr(date = new Date()) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 const CACHE_PREFIX = 'workouts'
 
 // ─── Workout Programs ───
@@ -147,26 +154,27 @@ export async function deleteWorkout(id) {
 
 // ─── User Workout Progress ───
 
-export async function upsertUserWorkoutProgress(userId, { program_id, current_day, completed_exercises, weights = {} }) {
+export async function upsertUserWorkoutProgress(userId, { program_id, day_id, completed_exercises, weights = {} }) {
   const supabase = createClient()
   const { data: existing } = await supabase
     .from('user_workout_progress')
-    .select('id')
+    .select('id, completed_days')
     .eq('user_id', userId)
     .eq('program_id', program_id)
     .maybeSingle()
 
-  const payload = {
-    current_day,
-    completed_exercises,
-    weights,
-    updated_at: new Date().toISOString(),
-  }
-
   if (existing) {
+    const currDays = existing.completed_days || []
+    const mergedDays = currDays.includes(day_id) ? currDays : [...currDays, day_id]
     const { data, error } = await supabase
       .from('user_workout_progress')
-      .update(payload)
+      .update({
+        current_day: mergedDays.length,
+        completed_exercises,
+        completed_days: mergedDays,
+        weights,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', existing.id)
       .select('*, workout_programs(*)')
       .single()
@@ -179,10 +187,11 @@ export async function upsertUserWorkoutProgress(userId, { program_id, current_da
     .insert({
       user_id: userId,
       program_id,
-      current_day,
+      current_day: 1,
       completed_exercises,
+      completed_days: [day_id],
       weights,
-      start_date: new Date().toISOString().split('T')[0],
+      start_date: localDateStr(),
     })
     .select('*, workout_programs(*)')
     .single()
@@ -200,8 +209,8 @@ export async function getWeeklyActivity(userId) {
     .from('workouts')
     .select('date')
     .eq('user_id', userId)
-    .gte('date', sevenDaysAgo.toISOString().split('T')[0])
-    .lte('date', today.toISOString().split('T')[0])
+    .gte('date', localDateStr(sevenDaysAgo))
+    .lte('date', localDateStr(today))
   if (error) throw error
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -209,7 +218,7 @@ export async function getWeeklyActivity(userId) {
   for (let i = 0; i < 7; i++) {
     const d = new Date(sevenDaysAgo)
     d.setDate(d.getDate() + i)
-    const key = d.toISOString().split('T')[0]
+    const key = localDateStr(d)
     activityMap[key] = { name: dayNames[d.getDay()], workouts: 0 }
   }
 

@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   getWorkoutPrograms, getExercisesByProgram, getWorkoutDays,
-  createWorkout, upsertUserWorkoutProgress,
+  createWorkout, upsertUserWorkoutProgress, getUserWorkoutProgress,
 } from '@/db';
 
 const DAY_NAMES = ['Full Body Strength', 'Cardio & Conditioning', 'Mobility & Recovery', 'Power & Explosiveness', 'Core & Stability', 'Active Recovery', 'Full Body Endurance']
@@ -34,10 +34,31 @@ const MovePage = () => {
   const [expandedWeek, setExpandedWeek] = useState(null);
   const [expandedDay, setExpandedDay] = useState(null);
 
+  async function loadProgress(programId) {
+    if (!currentUser) return;
+    try {
+      const progress = await getUserWorkoutProgress(currentUser.id);
+      const prog = (progress || []).find(p => p.program_id === programId);
+      if (prog?.completed_days) {
+        const completed = {};
+        prog.completed_days.forEach(did => { completed[did] = true; });
+        setCompletedDays(completed);
+      }
+    } catch (e) {
+      console.warn('Failed to load progress:', e);
+    }
+  }
+
   useEffect(() => {
     document.title = 'MOVE | Limitless Motion';
     loadPrograms();
   }, []);
+
+  useEffect(() => {
+    if (currentUser && selectedProgram && days.length > 0) {
+      loadProgress(selectedProgram);
+    }
+  }, [currentUser]);
 
   async function loadPrograms() {
     try {
@@ -97,6 +118,7 @@ const MovePage = () => {
         reps: e.reps, focus: e.muscle_groups, tips: e.form_tips, day_id: e.day_id,
       }));
       setExercises(mapped);
+      if (currentUser) await loadProgress(programId);
     } catch (e) {
       console.warn('Failed to fetch workout data:', e);
       setDays([]);
@@ -149,7 +171,8 @@ const MovePage = () => {
 
     setCompleting(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const d = new Date();
+      const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       for (const ex of dayExs) {
         await createWorkout({
           user_id: currentUser.id, exercise_name: ex.name, date: today,
@@ -159,7 +182,7 @@ const MovePage = () => {
 
       if (selectedProgram) {
         await upsertUserWorkoutProgress(currentUser.id, {
-          program_id: selectedProgram, current_day: 1,
+          program_id: selectedProgram, day_id: dayId,
           completed_exercises: dayExs.map(e => e.name),
         });
       }
@@ -206,7 +229,7 @@ const MovePage = () => {
       <div className="container-luxury">
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="relative rounded-3xl overflow-hidden bg-[hsl(var(--brand-move))] text-white p-8 md:p-16 mb-16"
+          className="relative rounded-3xl overflow-hidden bg-primary text-primary-foreground p-8 md:p-16 shadow-lg"
         >
           <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
           <div className="relative z-10 max-w-3xl">

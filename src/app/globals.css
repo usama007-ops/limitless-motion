@@ -109,7 +109,7 @@
   }
 
   .heading-display {
-    @apply font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.15] tracking-tight text-foreground;
+    @apply font-serif text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.15] tracking-tight;
   }
 
   .heading-section {

@@ -1,20 +1,28 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   Activity, TrendingUp, Target, Flame, Award, Loader2,
-  Plus, Pencil, Trash2, Dumbbell
+  Plus, Pencil, Trash2, Dumbbell, CheckCircle, RefreshCw
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { getWeeklyActivity, getWorkoutStreak, getUserWorkouts, getWorkoutStats } from '@/db';
+import { getWeeklyActivity, getWorkoutStreak, getUserWorkouts, getWorkoutStats, getUserWorkoutProgress, getWorkoutDays } from '@/db';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function parseReps(val) {
+  if (!val) return 0;
+  const m = String(val).match(/^(\d+(?:\.\d+)?)/);
+  return m ? Number(m[1]) : 0;
+}
 
 function computePRs(workouts) {
   if (!workouts || workouts.length === 0) return [];
@@ -22,10 +30,10 @@ function computePRs(workouts) {
   for (const w of workouts) {
     const key = w.exercise_name;
     if (!bestByExercise[key]) {
-      bestByExercise[key] = { name: key, maxWeight: 0, maxReps: 0, date: w.date };
+      bestByExercise[key] = { name: key, maxWeight: 0, maxReps: 0, date: w.date, sets: w.sets, unit: w.weight_unit || '' };
     }
     const wgt = Number(w.weight) || 0;
-    const rps = Number(w.reps) || 0;
+    const rps = parseReps(w.reps);
     if (wgt > bestByExercise[key].maxWeight) {
       bestByExercise[key].maxWeight = wgt;
       bestByExercise[key].date = w.date;
@@ -34,6 +42,7 @@ function computePRs(workouts) {
       bestByExercise[key].maxReps = rps;
       bestByExercise[key].date = w.date;
     }
+    if (!bestByExercise[key].sets && w.sets) bestByExercise[key].sets = w.sets;
   }
   return Object.values(bestByExercise)
     .filter(p => p.maxWeight > 0 || p.maxReps > 0)
@@ -53,6 +62,7 @@ function calcTDEE(profile) {
 
 const TrackPage = () => {
   const { currentUser } = useAuth();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [activityData, setActivityData] = useState([]);
   const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0 });
@@ -63,40 +73,60 @@ const TrackPage = () => {
   const [showAddPR, setShowAddPR] = useState(false);
   const [editingPR, setEditingPR] = useState(null);
   const [prForm, setPrForm] = useState({ name: '', value: '', unit: 'lbs', date: '' });
-
-  const fetchData = useCallback(async () => {
-    if (!currentUser) return;
-    setLoading(true);
-    try {
-      const [weekly, streakData, statsData, workoutRecords] = await Promise.all([
-        getWeeklyActivity(currentUser.id),
-        getWorkoutStreak(currentUser.id),
-        getWorkoutStats(currentUser.id),
-        getUserWorkouts(currentUser.id),
-      ]);
-      setActivityData(weekly);
-      setStreak(streakData);
-      setStats(statsData);
-      setPersonalRecords(computePRs(workoutRecords));
-
-      if (currentUser.user_metadata) {
-        const t = calcTDEE(currentUser.user_metadata);
-        if (t) setTdee(t);
-      }
-    } catch (e) {
-      console.error('Failed to load tracking data:', e);
-    }
-    setLoading(false);
-  }, [currentUser]);
+  const [programProgress, setProgramProgress] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     document.title = 'TRACK | Limitless Motion';
-    fetchData();
-  }, [fetchData]);
+    if (!currentUser) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [weekly, streakData, statsData, workoutRecords, progress] = await Promise.all([
+          getWeeklyActivity(currentUser.id),
+          getWorkoutStreak(currentUser.id),
+          getWorkoutStats(currentUser.id),
+          getUserWorkouts(currentUser.id),
+          getUserWorkoutProgress(currentUser.id),
+        ]);
+        if (cancelled) return;
+        setActivityData(weekly);
+        setStreak(streakData);
+        setStats(statsData);
+        setPersonalRecords(computePRs(workoutRecords));
 
+        if (progress && progress.length > 0) {
+          const withDays = await Promise.all(
+            progress.map(async p => {
+              try {
+                const days = await getWorkoutDays(p.program_id);
+                return { ...p, days };
+              } catch {
+                return { ...p, days: [] };
+              }
+            })
+          );
+          if (cancelled) return;
+          setProgramProgress(withDays);
+        }
+
+        if (currentUser.user_metadata) {
+          const t = calcTDEE(currentUser.user_metadata);
+          if (t) setTdee(t);
+        }
+      } catch (e) {
+        console.error('Failed to load tracking data:', e);
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [currentUser?.id, pathname, refreshKey]);
+
+  const totalDaysCompleted = programProgress.reduce((sum, p) => sum + (p.completed_days?.length || 0), 0);
   const thisWeekCount = activityData.reduce((sum, d) => sum + d.workouts, 0);
-  const consistency = stats.totalWorkouts > 0
-    ? Math.min(100, Math.round((thisWeekCount / Math.max(stats.totalWorkouts, 7)) * 100))
+  const consistency = totalDaysCompleted > 0
+    ? Math.min(100, Math.round((thisWeekCount / Math.max(totalDaysCompleted, 7)) * 100))
     : 0;
 
   function handleAddPR() {
@@ -129,11 +159,29 @@ const TrackPage = () => {
   return (
     <div className="pt-32 pb-24">
       <div className="container-luxury">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-          <h1 className="heading-display mb-4">Your Progress.</h1>
-          <p className="text-xl md:text-2xl text-muted-foreground font-light max-w-3xl leading-relaxed">
-            Data-driven insights to keep you aligned with your goals. Track your consistency, intensity, and achievements.
-          </p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="relative rounded-3xl overflow-hidden bg-primary text-primary-foreground p-8 md:p-16 shadow-lg mb-16"
+        >
+          <div className="absolute inset-0 bg-black/20 mix-blend-multiply pointer-events-none" />
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={() => setRefreshKey(k => k + 1)}
+            disabled={loading}
+            className="absolute top-6 right-6 z-20"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+          <div className="relative z-10 max-w-3xl">
+            <Badge className="bg-white/20 text-white hover:bg-white/30 border-none mb-6 uppercase tracking-widest font-bold backdrop-blur-sm px-3 py-1.5">
+              <Activity className="w-4 h-4 mr-2 inline" /> Analytics
+            </Badge>
+            <h1 className="heading-display mb-6">Your Progress.</h1>
+            <p className="text-xl md:text-2xl font-medium opacity-90 leading-relaxed">
+              Data-driven insights to keep you aligned with your goals. Track your consistency, intensity, and achievements.
+            </p>
+          </div>
         </motion.div>
 
         {loading ? (
@@ -147,9 +195,9 @@ const TrackPage = () => {
                     <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Total Workouts</span>
                     <Activity className="w-5 h-5 text-primary" />
                   </div>
-                  <div className="text-4xl font-black tracking-tight">{stats.totalWorkouts}</div>
+                  <div className="text-4xl font-black tracking-tight">{totalDaysCompleted}</div>
                   <p className="text-sm text-green-500 mt-2 flex items-center gap-1 font-medium">
-                    <TrendingUp className="w-3 h-3" /> {thisWeekCount} this week
+                    <TrendingUp className="w-3 h-3" /> {thisWeekCount} days this week
                   </p>
                 </CardContent>
               </Card>
@@ -225,7 +273,7 @@ const TrackPage = () => {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 h-[280px] overflow-y-auto">
                   {showAddPR && (
                     <div className="bg-muted/50 rounded-lg p-4 space-y-3 border border-border">
                       <Input
@@ -311,6 +359,37 @@ const TrackPage = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {programProgress.length > 0 && programProgress.map(prog => {
+              const completedDays = prog.completed_days || [];
+              const days = prog.days || [];
+              const totalDays = days.length;
+              const doneCount = completedDays.length;
+              const pct = totalDays > 0 ? Math.round((doneCount / totalDays) * 100) : 0;
+
+              return (
+                <Card key={prog.id} className="border-border/60 shadow-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Program Progress</p>
+                        <h3 className="font-bold text-lg">{prog.workout_programs?.name || 'Workout Program'}</h3>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-black text-primary">{pct}%</div>
+                        <p className="text-xs text-muted-foreground">{doneCount} of {totalDays} days completed</p>
+                      </div>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2.5">
+                      <div
+                        className="bg-primary h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {stats.recentWorkouts.length > 0 && (
               <Card className="border-border/60 shadow-sm">

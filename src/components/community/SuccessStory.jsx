@@ -15,21 +15,33 @@ const SuccessStory = ({ story, onClick }) => {
       <div className="relative h-56 w-full overflow-hidden bg-muted shrink-0">
         <div className="absolute inset-0 flex">
           <div className="w-1/2 h-full relative overflow-hidden">
-            <img 
-              src={story.beforePhoto} 
-              alt={`${story.name} Before`} 
-              className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-            />
+            {story.beforePhoto ? (
+              <img
+                src={story.beforePhoto}
+                alt={`${story.name} Before`}
+                className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">No Photo</span>
+              </div>
+            )}
             <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase">
               Before
             </div>
           </div>
           <div className="w-1/2 h-full relative overflow-hidden border-l-2 border-background">
-            <img 
-              src={story.afterPhoto} 
-              alt={`${story.name} After`} 
-              className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-            />
+            {story.afterPhoto ? (
+              <img
+                src={story.afterPhoto}
+                alt={`${story.name} After`}
+                className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">No Photo</span>
+              </div>
+            )}
             <div className="absolute bottom-2 right-2 bg-primary text-primary-foreground px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase shadow-sm">
               After
             </div>
