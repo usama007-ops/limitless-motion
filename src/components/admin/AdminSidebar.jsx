@@ -33,7 +33,6 @@ const sections = [
     items: [
       { label: 'Programs', path: '/admin/workout-programs', icon: Dumbbell },
       { label: 'Movements', path: '/admin/exercises', icon: Dumbbell },
-      { label: 'Builder', path: '/admin/exercises/builder', icon: Dumbbell },
       { label: 'Videos', path: '/admin/workout-videos', icon: Video },
       { label: 'Challenges', path: '/admin/challenges', icon: Trophy },
       { label: 'Recovery', path: '/admin/recovery', icon: Heart },

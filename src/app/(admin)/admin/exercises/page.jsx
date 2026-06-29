@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, LayoutTemplate } from 'lucide-react'
 import AdminPageHeader from '@/components/admin/AdminPageHeader'
 import DataTable from '@/components/admin/DataTable'
 import ConfirmDialog from '@/components/admin/ConfirmDialog'
+import MovementBuilderCanvas from '@/components/admin/MovementBuilderCanvas'
 import { getExercises } from '@/db'
 import { adminDelete } from '@/lib/adminDb'
 
@@ -23,6 +24,7 @@ export default function AdminExercises() {
   const [error, setError] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [builderOpen, setBuilderOpen] = useState(false)
 
   useEffect(() => { document.title = 'Movements - Admin - Limitless Motion'; fetchData() }, [])
 
@@ -46,9 +48,29 @@ export default function AdminExercises() {
 
   return (
     <div>
-      <AdminPageHeader title="Movements" description="Manage individual movements/exercises." action={<button onClick={() => router.push('/admin/exercises/new')} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-accent-foreground bg-accent hover:bg-accent/90 rounded-md transition-colors"><Plus className="w-4 h-4" /> New Movement</button>} />
+      <AdminPageHeader
+        title="Movements"
+        description="Manage individual movements/exercises."
+        action={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setBuilderOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-accent-foreground bg-accent hover:bg-accent/90 rounded-md transition-colors"
+            >
+              <LayoutTemplate className="w-4 h-4" /> Builder
+            </button>
+            <button
+              onClick={() => router.push('/admin/exercises/new')}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-accent-foreground bg-accent hover:bg-accent/90 rounded-md transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Movement
+            </button>
+          </div>
+        }
+      />
       <DataTable columns={columns} data={items} searchable searchPlaceholder="Search movements..." onEdit={(id) => router.push(`/admin/exercises/${id}/edit`)} onDelete={(id) => setDeleteTarget(id)} />
       <ConfirmDialog open={!!deleteTarget} onConfirm={() => handleDelete(deleteTarget)} onCancel={() => setDeleteTarget(null)} loading={deleting} title="Delete Movement" message="Are you sure?" />
+      <MovementBuilderCanvas open={builderOpen} onClose={() => { setBuilderOpen(false); fetchData() }} />
     </div>
   )
 }
