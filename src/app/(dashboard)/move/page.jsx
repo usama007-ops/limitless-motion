@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, Clock, RefreshCw, Loader2, CheckCircle, Circle,
-  Trophy, ArrowRight
+  Trophy, ArrowRight, ChevronDown, ChevronUp, Dumbbell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  getWorkoutPrograms, getExercisesByProgram,
+  getWorkoutPrograms, getExercisesByProgram, getWorkoutDays,
   createWorkout, upsertUserWorkoutProgress,
 } from '@/db';
 
@@ -23,11 +23,13 @@ const MovePage = () => {
   const [programs, setPrograms] = useState([]);
   const [filteredPrograms, setFilteredPrograms] = useState([]);
   const [selectedProgram, setSelectedProgram] = useState(null);
-  const [exercises, setExercises] = useState(null);
+  const [days, setDays] = useState([]);
+  const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [checkedExercises, setCheckedExercises] = useState({});
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [expandedDays, setExpandedDays] = useState({});
 
   useEffect(() => {
     document.title = 'MOVE | Limitless Motion';
@@ -42,7 +44,7 @@ const MovePage = () => {
         const first = records[0];
         setSelectedProgram(first.id);
         setDifficulty(first.difficulty || null);
-        await loadExercises(first.id);
+        await loadWorkoutData(first.id);
         return;
       }
     } catch (e) {
@@ -59,48 +61,64 @@ const MovePage = () => {
     setFilteredPrograms(filtered);
     if (filtered.length > 0 && (!selectedProgram || !filtered.find(p => p.id === selectedProgram))) {
       setSelectedProgram(filtered[0].id);
-      loadExercises(filtered[0].id);
+      loadWorkoutData(filtered[0].id);
     }
     if (filtered.length === 0) {
-      setExercises(null);
+      setDays([]);
+      setExercises([]);
     }
   }, [difficulty, programs]);
 
-  async function loadExercises(programId) {
+  useEffect(() => {
+    if (days.length > 0) {
+      const expanded = {};
+      days.forEach(d => { expanded[d.id] = true });
+      setExpandedDays(expanded);
+    }
+  }, [days]);
+
+  async function loadWorkoutData(programId) {
     setLoading(true);
     setCheckedExercises({});
     setCompleted(false);
     try {
-      const exRecords = await getExercisesByProgram(programId);
-      if (exRecords && exRecords.length > 0) {
-        setExercises(exRecords.map(e => ({
-          id: e.id,
-          name: e.exercise_name,
-          sets: e.sets,
-          reps: e.reps,
-          focus: e.muscle_groups,
-          tips: e.form_tips,
-        })));
-      } else {
-        setExercises(null);
-      }
+      const [dayRecords, exRecords] = await Promise.all([
+        getWorkoutDays(programId),
+        getExercisesByProgram(programId),
+      ]);
+      setDays(dayRecords || []);
+      const mapped = (exRecords || []).map(e => ({
+        id: e.id,
+        name: e.exercise_name,
+        sets: e.sets,
+        reps: e.reps,
+        focus: e.muscle_groups,
+        tips: e.form_tips,
+        day_id: e.day_id,
+      }));
+      setExercises(mapped);
     } catch (e) {
-      console.warn('Failed to fetch exercises:', e);
-      setExercises(null);
+      console.warn('Failed to fetch workout data:', e);
+      setDays([]);
+      setExercises([]);
     }
     setLoading(false);
   }
 
   async function handleSelectProgram(programId) {
     setSelectedProgram(programId);
-    await loadExercises(programId);
+    await loadWorkoutData(programId);
   }
 
-  function toggleExercise(exIdx) {
+  function toggleDay(dayId) {
+    setExpandedDays(prev => ({ ...prev, [dayId]: !prev[dayId] }));
+  }
+
+  function toggleExercise(exId) {
     setCheckedExercises(prev => {
       const next = { ...prev };
-      if (next[exIdx]) delete next[exIdx];
-      else next[exIdx] = true;
+      if (next[exId]) delete next[exId];
+      else next[exId] = true;
       return next;
     });
   }
@@ -112,7 +130,7 @@ const MovePage = () => {
     }
     if (!exercises || exercises.length === 0) return;
 
-    const allChecked = exercises.every((_, i) => checkedExercises[i]);
+    const allChecked = exercises.every(ex => checkedExercises[ex.id]);
     if (!allChecked) {
       toast.error('Complete all movements or uncheck skipped ones');
       return;
@@ -127,7 +145,7 @@ const MovePage = () => {
           exercise_name: ex.name,
           date: today,
           sets: ex.sets || 1,
-          reps: ex.reps || 1,
+          reps: ex.reps || '1',
         });
       }
 
@@ -149,8 +167,22 @@ const MovePage = () => {
     setCompleting(false);
   }, [currentUser, checkedExercises, exercises, selectedProgram]);
 
-  const allChecked = exercises && exercises.length > 0 && exercises.every((_, i) => checkedExercises[i]);
+  const totalExercises = exercises.length;
+  const checkedCount = Object.keys(checkedExercises).length;
+  const allChecked = totalExercises > 0 && exercises.every(ex => checkedExercises[ex.id]);
   const currentProgram = programs.find(p => p.id === selectedProgram);
+
+  const exercisesByDay = {};
+  exercises.forEach(ex => {
+    const key = ex.day_id || 'ungrouped';
+    if (!exercisesByDay[key]) exercisesByDay[key] = [];
+    exercisesByDay[key].push(ex);
+  });
+
+  function getDayName(dayId) {
+    const day = days.find(d => d.id === dayId);
+    return day ? day.day_name : 'Other Movements';
+  }
 
   return (
     <div className="pt-32 pb-24">
@@ -216,20 +248,23 @@ const MovePage = () => {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
-          ) : exercises && exercises.length > 0 ? (
+          ) : totalExercises > 0 ? (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
                 <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 bg-muted/30">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-sm font-black text-muted-foreground uppercase tracking-widest">
-                        {exercises.length} Movements
+                        {days.length} Days &bull; {totalExercises} Movements
                       </span>
                       {currentProgram?.session_duration && (
                         <span className="flex items-center gap-1.5 text-sm font-medium bg-background px-3 py-1.5 rounded-lg border border-border">
                           <Clock className="w-4 h-4 text-muted-foreground" /> {currentProgram.session_duration} min
                         </span>
                       )}
+                      <span className="flex items-center gap-1.5 text-sm font-medium bg-background px-3 py-1.5 rounded-lg border border-border">
+                        <Activity className="w-4 h-4 text-muted-foreground" /> {checkedCount}/{totalExercises}
+                      </span>
                       {completed && (
                         <Badge className="bg-green-500/15 text-green-600 border-green-500/30">
                           <CheckCircle className="w-3 h-3 mr-1" /> Complete
@@ -242,51 +277,131 @@ const MovePage = () => {
                   </div>
                 </div>
 
-                <div className="p-4 md:p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {exercises.map((ex, i) => {
-                      const isChecked = !!checkedExercises[i];
-                      return (
-                        <div
-                          key={ex.id || i}
-                          className={`bg-background border rounded-xl p-4 flex flex-col cursor-pointer transition-colors ${
-                            isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => !completed && toggleExercise(i)}
+                <div className="p-4 md:p-6 space-y-4">
+                  {days.map((day) => {
+                    const dayExs = exercisesByDay[day.id] || [];
+                    if (dayExs.length === 0) return null;
+                    const dayChecked = dayExs.filter(ex => checkedExercises[ex.id]).length;
+                    const isExpanded = expandedDays[day.id];
+
+                    return (
+                      <div key={day.id} className="border border-border rounded-xl overflow-hidden bg-background">
+                        <button
+                          type="button"
+                          onClick={() => toggleDay(day.id)}
+                          className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
                         >
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-2">
-                              {isChecked ? (
-                                <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
-                              ) : (
-                                <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
-                              )}
-                              <h4 className="font-bold text-lg">{ex.name}</h4>
-                            </div>
-                            <Badge variant="secondary" className="bg-muted text-muted-foreground">{ex.focus}</Badge>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                            <div className="bg-muted/50 rounded p-2">
-                              <span className="block text-xs text-muted-foreground uppercase font-bold">Sets</span>
-                              <span className="font-semibold">{ex.sets}</span>
-                            </div>
-                            <div className="bg-muted/50 rounded p-2">
-                              <span className="block text-xs text-muted-foreground uppercase font-bold">Reps/Time</span>
-                              <span className="font-semibold">{ex.reps}</span>
+                          <div className="flex items-center gap-3">
+                            <Dumbbell className="w-5 h-5 text-[hsl(var(--brand-move))]" />
+                            <div className="text-left">
+                              <h4 className="font-bold text-foreground">{day.day_name}</h4>
+                              <p className="text-xs text-muted-foreground">{dayExs.length} movements &bull; {dayChecked}/{dayExs.length} complete</p>
                             </div>
                           </div>
-                          {ex.tips && (
-                            <p className="text-sm text-muted-foreground mt-auto bg-[hsl(var(--brand-move))/5] p-2 rounded border border-[hsl(var(--brand-move))/10]">
-                              <span className="font-semibold text-foreground">Focus:</span> {ex.tips}
-                            </p>
+                          <div className="flex items-center gap-2">
+                            {dayChecked === dayExs.length && dayExs.length > 0 && (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            )}
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                        </button>
+
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="border-t border-border"
+                            >
+                              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {dayExs.map(ex => {
+                                  const isChecked = !!checkedExercises[ex.id];
+                                  return (
+                                    <div
+                                      key={ex.id}
+                                      className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-colors ${
+                                        isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
+                                      }`}
+                                      onClick={() => !completed && toggleExercise(ex.id)}
+                                    >
+                                      <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-2">
+                                          {isChecked ? (
+                                            <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                                          ) : (
+                                            <Circle className="w-5 h-5 text-muted-foreground shrink-0" />
+                                          )}
+                                          <h4 className="font-bold text-lg">{ex.name}</h4>
+                                        </div>
+                                        <Badge variant="secondary" className="bg-muted text-muted-foreground shrink-0">{ex.focus}</Badge>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                                        <div className="bg-muted/50 rounded p-2">
+                                          <span className="block text-xs text-muted-foreground uppercase font-bold">Sets</span>
+                                          <span className="font-semibold">{ex.sets}</span>
+                                        </div>
+                                        <div className="bg-muted/50 rounded p-2">
+                                          <span className="block text-xs text-muted-foreground uppercase font-bold">Reps/Time</span>
+                                          <span className="font-semibold">{ex.reps}</span>
+                                        </div>
+                                      </div>
+                                      {ex.tips && (
+                                        <p className="text-sm text-muted-foreground mt-auto bg-[hsl(var(--brand-move))/5] p-2 rounded border border-[hsl(var(--brand-move))/10]">
+                                          <span className="font-semibold text-foreground">Focus:</span> {ex.tips}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
                           )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+
+                  {exercisesByDay['ungrouped'] && exercisesByDay['ungrouped'].length > 0 && (
+                    <div className="border border-dashed border-border rounded-xl p-4 bg-muted/10">
+                      <h4 className="font-bold text-sm text-muted-foreground mb-3 uppercase tracking-wider">Other Movements</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {exercisesByDay['ungrouped'].map(ex => {
+                          const isChecked = !!checkedExercises[ex.id];
+                          return (
+                            <div
+                              key={ex.id}
+                              className={`border rounded-xl p-4 flex flex-col cursor-pointer transition-colors ${
+                                isChecked ? 'border-green-400 bg-green-50/5' : 'border-border hover:border-primary/50'
+                              }`}
+                              onClick={() => !completed && toggleExercise(ex.id)}
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-2">
+                                  {isChecked ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> : <Circle className="w-5 h-5 text-muted-foreground shrink-0" />}
+                                  <h4 className="font-bold text-lg">{ex.name}</h4>
+                                </div>
+                                <Badge variant="secondary" className="bg-muted text-muted-foreground">{ex.focus}</Badge>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
+                                <div className="bg-muted/50 rounded p-2">
+                                  <span className="block text-xs text-muted-foreground uppercase font-bold">Sets</span>
+                                  <span className="font-semibold">{ex.sets}</span>
+                                </div>
+                                <div className="bg-muted/50 rounded p-2">
+                                  <span className="block text-xs text-muted-foreground uppercase font-bold">Reps/Time</span>
+                                  <span className="font-semibold">{ex.reps}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {!completed && (
-                    <div className="mt-6 flex justify-end">
+                    <div className="flex justify-end pt-2">
                       <Button
                         size="lg"
                         disabled={!allChecked || completing}
@@ -303,7 +418,7 @@ const MovePage = () => {
                   )}
 
                   {completed && (
-                    <div className="mt-6 flex justify-end">
+                    <div className="flex justify-end pt-2">
                       <Button
                         variant="outline"
                         onClick={() => router.push('/track')}
