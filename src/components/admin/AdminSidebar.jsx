@@ -23,16 +23,6 @@ const sections = [
       { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     ],
   },
-{
-    label: 'Nutrition',
-    items: [
-      { label: 'All Meals', path: '/admin/meals', icon: UtensilsCrossed },
-      { label: 'Standard Recipes', path: '/admin/meal-recipes', icon: UtensilsCrossed },
-      { label: 'Ethiopian Meals', path: '/admin/ethiopian-meals', icon: Globe },
-      { label: 'High Protein', path: '/admin/high-protein-meals', icon: Beef },
-      { label: 'Fasting Breakfasts', path: '/admin/fasting-breakfasts', icon: Sunrise },
-    ],
-  },
   {
     label: 'Workouts',
     items: [
