@@ -22,6 +22,7 @@ const tabs = [
   { id: 'ethiopian', label: 'Ethiopian', icon: Globe, table: 'ethiopian_meals', fetch: getEthiopianMeals, cols: [
     { key: 'name', label: 'Name', sortable: true },
     { key: 'category', label: 'Category', sortable: true },
+    { key: 'season', label: 'Season', sortable: true },
     { key: 'calories_total', label: 'Calories', sortable: true },
     { key: 'protein_grams', label: 'Protein (g)', sortable: true },
     { key: 'prep_time_minutes', label: 'Prep (min)', sortable: true },

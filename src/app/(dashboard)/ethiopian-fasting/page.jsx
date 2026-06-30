@@ -13,55 +13,57 @@ const fallbackDishes = [
   {
     name: "Misir Wot",
     description: "A deeply flavorful, slow-cooked spicy red lentil stew featuring aromatic berbere spice.",
+    category: "dinner",
     ingredients: ["Red lentils (1 cup)", "Berbere (2 tbsp)", "Onions (1 cup)", "Garlic (3 cloves)", "Ginger (1 tsp)"],
-    nutritionFacts: { calories: 210, protein: 7.5, carbs: 35, fiber: 6.8, fat: 1.2, iron: 3.2, calcium: 45 },
-    healthBenefits: ["Supports cardiovascular health", "Provides sustained energy release", "Promotes muscle recovery"],
-    prepTime: "30 mins",
-    servingSize: "1 cup / serving",
-    whyGoodForFasting: "Plant-based and incredibly nutrient-dense. The high protein and complex carbs ensure sustained energy without animal products."
+    meal_prep_instructions: "1. Rinse lentils and set aside. 2. Sauté onions in oil until golden. 3. Add garlic, ginger, berbere; cook 2 minutes. 4. Add lentils, water, and simmer 25-30 minutes until tender.",
+    prep_time_minutes: 30,
+    calories_total: 210,
+    protein_grams: 7.5,
+    carbs_grams: 35,
+    fats_grams: 1.2,
+    image_url: ""
   },
   {
     name: "Shiro",
     description: "A smooth, creamy stew made from roasted and ground chickpea flour, simmered with minced onions and garlic.",
+    category: "dinner",
     ingredients: ["Chickpea flour (1/2 cup)", "Berbere (1 tbsp)", "Onions (1/2 cup)", "Garlic (2 cloves)", "Oil (1 tbsp)"],
-    nutritionFacts: { calories: 185, protein: 8.2, carbs: 28, fiber: 5.1, fat: 2.8, iron: 2.1, calcium: 52 },
-    healthBenefits: ["Boosts digestive health", "Excellent plant protein source", "Supports stable blood sugar"],
-    prepTime: "20 mins",
-    servingSize: "1 cup / serving",
-    whyGoodForFasting: "An essential fasting staple that digests easily while providing a robust profile of amino acids essential during animal product restriction."
+    meal_prep_instructions: "1. Sauté onions and garlic in oil until soft. 2. Add berbere, cook 1 minute. 3. Whisk in chickpea flour with water to form smooth paste. 4. Simmer 15 minutes, stirring frequently.",
+    prep_time_minutes: 20,
+    calories_total: 185,
+    protein_grams: 8.2,
+    carbs_grams: 28,
+    fats_grams: 2.8,
+    image_url: ""
   },
   {
     name: "Gomen",
     description: "Tender collard greens slow-cooked with a mild blend of garlic, ginger, and diced onions.",
+    category: "lunch",
     ingredients: ["Collard greens (2 cups)", "Garlic (2 cloves)", "Onions (1/2 cup)", "Ginger (1 tsp)", "Jalapeño (1/2)"],
-    nutritionFacts: { calories: 95, protein: 4.1, carbs: 16, fiber: 3.2, fat: 0.8, iron: 1.8, calcium: 180 },
-    healthBenefits: ["Exceptional bone health support", "Potent antioxidant properties", "Aids natural detoxification"],
-    prepTime: "25 mins",
-    servingSize: "1 cup / serving",
-    whyGoodForFasting: "Crucial for micronutrient intake. Provides high volumes of calcium and iron to compensate for dairy and meat absence."
+    meal_prep_instructions: "1. Sauté onions, garlic, ginger in oil. 2. Add chopped greens, stir until wilted. 3. Add water, cover and simmer 20 minutes until tender.",
+    prep_time_minutes: 25,
+    calories_total: 95,
+    protein_grams: 4.1,
+    carbs_grams: 16,
+    fats_grams: 0.8,
+    image_url: ""
   }
 ];
 
 function mapEthiopianMealToDish(m) {
-  const ingredients = Array.isArray(m.ingredients) ? m.ingredients : ['No ingredient data'];
-  const cal = Number(m.calories_total) || 0;
   return {
     name: m.name,
     description: m.description || '',
-    ingredients: ingredients.map(i => i.charAt(0).toUpperCase() + i.slice(1)),
-    nutritionFacts: {
-      calories: cal,
-      protein: Number(m.protein_grams) || 0,
-      carbs: Number(m.carbs_grams) || 0,
-      fiber: 0,
-      fat: Number(m.fats_grams) || 0,
-      iron: 0,
-      calcium: 0,
-    },
-    healthBenefits: ["Nutrient-dense traditional dish", "Supports overall wellness", "Rich in plant-based nutrition"],
-    prepTime: m.prep_time_minutes ? `${m.prep_time_minutes} mins` : '30 mins',
-    servingSize: '1 serving',
-    whyGoodForFasting: 'A traditional Ethiopian dish packed with plant-based nutrients to sustain energy during fasting periods.'
+    category: m.category,
+    ingredients: Array.isArray(m.ingredients) ? m.ingredients : [],
+    meal_prep_instructions: m.meal_prep_instructions || '',
+    prep_time_minutes: Number(m.prep_time_minutes) || 30,
+    calories_total: Number(m.calories_total) || 0,
+    protein_grams: Number(m.protein_grams) || 0,
+    carbs_grams: Number(m.carbs_grams) || 0,
+    fats_grams: Number(m.fats_grams) || 0,
+    image_url: m.image_url || '',
   };
 }
 

@@ -10,6 +10,7 @@ const fields = [
   { name: 'name', label: 'Meal Name', type: 'text', required: true },
   { name: 'description', label: 'Description', type: 'textarea', rows: 3 },
   { name: 'category', label: 'Category', type: 'select', options: ['breakfast', 'lunch', 'dinner', 'snack'], required: true },
+  { name: 'season', label: 'Season', type: 'select', options: ['fasting', 'non-fasting', 'both'] },
   { name: 'ingredients', label: 'Ingredients', type: 'repeater', itemLabel: 'Ingredient', itemType: 'simple' },
   { name: 'meal_prep_instructions', label: 'Instructions', type: 'textarea', rows: 6 },
   { name: 'calories_total', label: 'Calories', type: 'number' },

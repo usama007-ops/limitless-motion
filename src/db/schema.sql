@@ -327,6 +327,7 @@ create table if not exists public.ethiopian_meals (
   fats_grams numeric,
   meal_prep_instructions text,
   category text check (category in ('breakfast', 'lunch', 'dinner', 'snack')),
+  season text check (season in ('fasting', 'non-fasting', 'both')),
   image_url text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
