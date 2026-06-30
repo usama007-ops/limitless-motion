@@ -27,8 +27,6 @@ const sections = [
     label: 'Workouts',
     items: [
       { label: 'Programs', path: '/admin/workout-programs', icon: Dumbbell },
-
-      { label: 'Videos', path: '/admin/workout-videos', icon: Video },
       { label: 'Challenges', path: '/admin/challenges', icon: Trophy },
       { label: 'Recovery', path: '/admin/recovery', icon: Heart },
     ],
@@ -46,7 +44,7 @@ const sections = [
   {
     label: 'Media',
     items: [
-      { label: 'Interviews', path: '/admin/videos', icon: Film },
+      { label: 'Videos', path: '/admin/workout-videos', icon: Video },
       { label: 'Podcasts', path: '/admin/podcasts', icon: Mic },
       { label: 'Affirmations', path: '/admin/affirmations', icon: Quote },
     ],
@@ -61,7 +59,6 @@ const sections = [
   {
     label: 'Shop',
     items: [
-      { label: 'Attire', path: '/admin/attire', icon: Shirt },
       { label: 'Products', path: '/admin/apparel-products', icon: Tag },
     ],
   },
