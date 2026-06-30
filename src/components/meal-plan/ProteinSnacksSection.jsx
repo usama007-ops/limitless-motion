@@ -1,71 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { Zap, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Zap, AlertCircle, RefreshCcw } from 'lucide-react';
+import MealImage from './MealImage.jsx';
 import { getHighProteinMeals } from '@/db';
+
+const FALLBACK_SNACKS = [
+  { id: 'fb-s1', name: 'Greek Yogurt (Plain)', description: 'Creamy plain Greek yogurt rich in protein and probiotics.', protein_grams: 15, calories_total: 150, ingredients: ['Plain Greek yogurt (1 cup)'], instructions: 'Scoop 1 cup of plain Greek yogurt into a bowl. Enjoy as-is or with a pinch of cinnamon.' },
+  { id: 'fb-s2', name: 'Protein Bars (Chocolate/Vanilla)', description: 'Convenient whey protein bars with balanced macros for on-the-go nutrition.', protein_grams: 20, calories_total: 220 },
+  { id: 'fb-s3', name: 'Mixed Yogurt Bowl with Berries', description: 'Greek yogurt topped with fresh mixed berries and a drizzle of honey.', protein_grams: 18, calories_total: 250 },
+  { id: 'fb-s4', name: 'Beef Jerky', description: 'Lean, high-protein dried beef with smoky seasoning.', protein_grams: 12, calories_total: 90, ingredients: ['Beef jerky (2 oz)'], instructions: 'Open package and enjoy as a quick high-protein snack between meals.' },
+  { id: 'fb-s5', name: 'Cottage Cheese & Pineapple', description: 'Low-fat cottage cheese with fresh pineapple chunks.', protein_grams: 22, calories_total: 180 },
+  { id: 'fb-s6', name: 'Hard-Boiled Eggs (2)', description: 'Two hard-boiled eggs with a pinch of sea salt and black pepper.', protein_grams: 12, calories_total: 140 },
+  { id: 'fb-s7', name: 'Edamame (Steamed)', description: 'Steamed edamame pods lightly salted — a plant-based protein snack.', protein_grams: 17, calories_total: 190 },
+  { id: 'fb-s8', name: 'Roasted Chickpeas', description: 'Crispy oven-roasted chickpeas seasoned with smoked paprika.', protein_grams: 10, calories_total: 130 },
+];
 
 const ProteinSnacksSection = () => {
   const [snacks, setSnacks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchSnacks = async () => {
-      try {
-        const records = await getHighProteinMeals({ category: 'snack', limit: 10 });
-
-        let fetchedSnacks = records || [];
-
-        if (fetchedSnacks.length === 0) {
-          fetchedSnacks = [
-            { 
-              id: 'snack-1',
-              name: "Greek Yogurt (Plain)", 
-              calories_total: 150,
-              protein_grams: 15,
-              image_url: "https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/6bb01ef1eb4fd954c7bc71f7d8928952.png" 
-            },
-            { 
-              id: 'snack-2',
-              name: "Protein Bars (Chocolate/Vanilla)", 
-              calories_total: 220,
-              protein_grams: 20,
-              image_url: "https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/62f7d8a32f3a30217983d127ecd3ce27.png" 
-            },
-            { 
-              id: 'snack-3',
-              name: "Mixed Yogurt Bowl with Berries", 
-              calories_total: 250,
-              protein_grams: 18,
-              image_url: "https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/6bb01ef1eb4fd954c7bc71f7d8928952.png" 
-            }
-          ];
-        }
-
-        setSnacks(fetchedSnacks);
-      } catch (err) {
-        console.error("Error fetching snacks:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSnacks();
+  const fetchSnacks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const records = await getHighProteinMeals({ category: 'snack', limit: 10 });
+      setSnacks((records || []).length > 0 ? records : FALLBACK_SNACKS);
+    } catch (err) {
+      console.error('Error fetching snacks:', err);
+      setSnacks(FALLBACK_SNACKS);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const getImageUrl = (snack) => {
-    if (snack.image_url && snack.image_url.startsWith('http')) {
-      return snack.image_url;
-    }
-    if (snack.name?.toLowerCase().includes('greek yogurt') || snack.name?.toLowerCase().includes('yogurt')) {
-       return "https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/6bb01ef1eb4fd954c7bc71f7d8928952.png";
-    }
-    return null;
-  };
+  useEffect(() => {
+    fetchSnacks();
+  }, [fetchSnacks]);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+          {[...Array(8)].map((_, index) => (
+            <div key={index} className="overflow-hidden border border-border rounded-xl bg-card">
+              <div className="aspect-[4/3] bg-muted" />
+              <div className="p-5">
+                <div className="h-5 bg-muted rounded w-3/4 mb-3" />
+                <div className="h-4 bg-muted rounded w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -85,64 +73,53 @@ const ProteinSnacksSection = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {snacks.map((snack, index) => {
-          const imageUrl = getImageUrl(snack);
-          
-          return (
-            <motion.div 
-              key={snack.id} 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
-              className="h-full"
-            >
-              <Card className="h-full border-border bg-card shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col group">
-                {imageUrl ? (
-                  <div className="relative aspect-[4/3] bg-muted overflow-hidden">
-                    <img 
-                      src={imageUrl} 
-                      alt={snack.name} 
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-90" />
-                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                      <div className="bg-background/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm inline-flex items-center tabular-nums">
-                        {snack.calories_total || snack.calories || 0} <span className="text-muted-foreground text-xs font-medium ml-1">kcal</span>
-                      </div>
-                      {snack.protein_grams && (
-                        <div className="text-primary-foreground bg-primary px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm tabular-nums">
-                          {snack.protein_grams}g Pro
-                        </div>
-                      )}
-                    </div>
+        {snacks.map((snack, index) => (
+          <motion.div
+            key={snack.id}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+            className="h-full"
+          >
+            <Card className="h-full border-border bg-card shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col group">
+              <div className="relative aspect-[4/3] bg-muted overflow-hidden">
+                <MealImage src={snack?.imageUrl || snack?.image_url || snack?.image} name={snack.name} alt={snack.name} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-90" />
+                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                  <div className="bg-background/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm inline-flex items-center tabular-nums">
+                    {snack.calories_total || snack.calories || 0} <span className="text-muted-foreground text-xs font-medium ml-1">kcal</span>
                   </div>
-                ) : (
-                  <div className="aspect-[4/3] bg-muted flex items-center justify-center relative">
-                    <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
-                    <div className="absolute bottom-4 left-4">
-                      <div className="bg-background/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm inline-flex items-center tabular-nums">
-                        {snack.calories_total || snack.calories || 0} kcal
-                      </div>
+                  {snack.protein_grams && (
+                    <div className="text-primary-foreground bg-primary px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm tabular-nums">
+                      {snack.protein_grams}g Pro
                     </div>
-                  </div>
-                )}
-                
-                <CardContent className="p-5 flex-grow flex flex-col justify-center">
-                  <h3 className="text-lg font-semibold text-card-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                    {snack.name}
-                  </h3>
-                  {snack.description && (
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                      {snack.description}
-                    </p>
                   )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
+                </div>
+              </div>
+
+              <CardContent className="p-5 flex-grow flex flex-col justify-center">
+                <h3 className="text-lg font-semibold text-card-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                  {snack.name}
+                </h3>
+                {snack.description && (
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                    {snack.description}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
+
+      {error && (
+        <div className="mt-8 flex justify-center">
+          <Button onClick={fetchSnacks} variant="outline" className="flex items-center gap-2">
+            <RefreshCcw className="w-4 h-4" /> Retry Loading
+          </Button>
+        </div>
+      )}
     </section>
   );
 };

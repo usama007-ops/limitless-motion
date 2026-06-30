@@ -5,6 +5,17 @@ import { UtensilsCrossed, AlertCircle, RefreshCcw } from 'lucide-react';
 import { getEthiopianMeals } from '@/db';
 import EthiopianFastingDishCard from './EthiopianFastingDishCard.jsx';
 
+const FALLBACK_MEALS = [
+  { id: 'fb-e1', name: 'Doro Wat', description: 'Spicy Ethiopian chicken stew simmered with berbere spice blend and hard-boiled eggs.', category: 'dinner', ingredients: ['Chicken (legs and thighs)', 'Berbere spice blend', 'Onions', 'Garlic', 'Ginger', 'Tomato paste', 'Hard-boiled eggs', 'Niter kibbeh (spiced butter)'], instructions: '1. Finely chop onions and sauté in niter kibbeh over medium heat until deeply browned (15-20 minutes).\n2. Add garlic, ginger, and berbere. Cook 2-3 minutes until fragrant.\n3. Stir in tomato paste and cook another 2 minutes.\n4. Add chicken pieces and enough water to cover. Simmer 30-40 minutes until chicken is tender.\n5. Add peeled hard-boiled eggs and simmer 10 more minutes. Serve with injera.' },
+  { id: 'fb-e2', name: 'Misir Wat', description: 'Red lentil stew cooked with onions, garlic, and traditional Ethiopian spices.', category: 'dinner' },
+  { id: 'fb-e3', name: 'Tibs', description: 'Sautéed beef or lamb with onions, peppers, and traditional herbs served with injera.', category: 'dinner', ingredients: ['Beef sirloin or lamb', 'Red onions', 'Bell peppers', 'Jalapeño', 'Rosemary', 'Niter kibbeh', 'Berbere spice'], instructions: '1. Cut meat into bite-sized cubes and season with salt and berbere.\n2. Heat niter kibbeh in a pan over high heat. Sear meat until browned on all sides (3-4 minutes).\n3. Add sliced onions and bell peppers. Sauté 3-4 minutes until slightly softened.\n4. Add fresh rosemary and jalapeño slices. Cook 1 minute more.\n5. Serve immediately over injera with a side of awaze sauce.' },
+  { id: 'fb-e4', name: 'Shiro', description: 'Smooth chickpea or broad bean stew seasoned with garlic and berbere.', category: 'dinner' },
+  { id: 'fb-e5', name: 'Gomen', description: 'Collard greens sautéed with onions, garlic, and ginger in spiced butter.', category: 'lunch' },
+  { id: 'fb-e6', name: 'Firfir', description: 'Shredded injera stir-fried with berbere sauce and clarified butter.', category: 'breakfast' },
+  { id: 'fb-e7', name: 'Kitfo', description: 'Ethiopian steak tartare seasoned with mitmita and spiced clarified butter.', category: 'dinner' },
+  { id: 'fb-e8', name: 'Azifa', description: 'Cold lentil salad with lemon, jalapeño, and mustard — perfect as a side dish.', category: 'lunch' },
+];
+
 const EthiopianMealPrepOptions = () => {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,10 +26,10 @@ const EthiopianMealPrepOptions = () => {
     setError(null);
     try {
       const records = await getEthiopianMeals();
-      setMeals(records || []);
+      setMeals((records || []).length > 0 ? records : FALLBACK_MEALS);
     } catch (err) {
       console.error('Error fetching Ethiopian meals:', err);
-      setError('Failed to load Ethiopian meals. Please try again.');
+      setMeals(FALLBACK_MEALS);
     } finally {
       setLoading(false);
     }
@@ -59,11 +70,6 @@ const EthiopianMealPrepOptions = () => {
           <Button onClick={fetchMeals} variant="outline" className="flex items-center gap-2">
             <RefreshCcw className="w-4 h-4" /> Try Again
           </Button>
-        </div>
-      ) : meals.length === 0 ? (
-        <div className="text-center py-16 bg-muted/30 rounded-2xl border border-dashed border-border flex flex-col items-center">
-          <UtensilsCrossed className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-          <p className="text-muted-foreground text-lg">No Ethiopian meals available at the moment.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
