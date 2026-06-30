@@ -1,24 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, Star, Zap, AlertCircle } from 'lucide-react';
+import { Shield, Star, Zap, AlertCircle, Loader2 } from 'lucide-react';
 import MembershipTierCard from '@/components/pricing/MembershipTierCard.jsx';
-import CheckoutFlow from '@/components/pricing/CheckoutFlow.jsx';
 import SubscriptionManager from '@/components/pricing/SubscriptionManager.jsx';
 import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const MembershipUpgradePage = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, profile, isPremium, refreshProfile } = useAuth();
   const [selectedTier, setSelectedTier] = useState(null);
+  const [billingCycle, setBillingCycle] = useState('monthly');
   const [paymentSystemAvailable, setPaymentSystemAvailable] = useState(true);
   const [checkingPayment, setCheckingPayment] = useState(true);
+  const [subscribing, setSubscribing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     document.title = 'Membership - Limitless Motion';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      setShowSuccess(true);
+      refreshProfile();
+      window.history.replaceState({}, '', '/membership-upgrade');
+    }
   }, []);
 
   useEffect(() => {
@@ -32,7 +41,7 @@ const MembershipUpgradePage = () => {
       
       try {
         const response = await fetch(`/api/stripe/payment-methods?userId=${currentUser.id}`);
-        if (!response.ok && isMounted) {
+        if (response.status >= 500 && isMounted) {
           setPaymentSystemAvailable(false);
         }
       } catch (error) {
@@ -46,6 +55,27 @@ const MembershipUpgradePage = () => {
     initializePaymentState();
     return () => { isMounted = false; };
   }, [currentUser]);
+
+  async function handleSubscribe() {
+    if (!selectedTier || !currentUser?.id) return;
+    setSubscribing(true);
+    try {
+      const successUrl = `${window.location.origin}/membership-upgrade?success=true`;
+      const cancelUrl = `${window.location.origin}/membership-upgrade`;
+      const response = await fetch('/api/stripe/create-subscription-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: selectedTier, billingCycle, successUrl, cancelUrl }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to create checkout');
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Subscription error:', error);
+      alert(error.message || 'Failed to start subscription checkout. Please try again.');
+      setSubscribing(false);
+    }
+  }
 
   const tiers = [
     { 
@@ -69,8 +99,7 @@ const MembershipUpgradePage = () => {
     }
   ];
 
-  const isPremium = currentUser?.isPremium || false;
-  const currentTierName = isPremium ? 'Premium' : 'Basic';
+  const currentTierName = isPremium ? (profile?.current_tier || 'Premium') : 'Basic';
 
   return (
     <ErrorBoundary>
@@ -92,16 +121,26 @@ const MembershipUpgradePage = () => {
               </Badge>
             </div>
           </div>
-          {currentUser?.membershipEndDate && (
+          {profile?.membership_end_date && (
             <div className="text-right">
               <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-1">Renewal Date</p>
               <p className="text-lg font-medium text-foreground">
-                {new Date(currentUser.membershipEndDate).toLocaleDateString()}
+                {new Date(profile.membership_end_date).toLocaleDateString()}
               </p>
             </div>
           )}
         </div>
         
+        {showSuccess && (
+          <Alert className="max-w-5xl mx-auto mb-8 bg-success/5 border-success/20 text-success">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Subscription Successful!</AlertTitle>
+            <AlertDescription>
+              Your membership has been activated. Welcome to Limitless Motion!
+            </AlertDescription>
+          </Alert>
+        )}
+
         {!paymentSystemAvailable && !checkingPayment && (
           <Alert variant="destructive" className="max-w-5xl mx-auto mb-8 bg-destructive/5 border-destructive/20">
             <AlertCircle className="h-4 w-4" />
@@ -142,20 +181,55 @@ const MembershipUpgradePage = () => {
             
             {selectedTier && paymentSystemAvailable && (
               <div className="max-w-xl mx-auto scroll-mt-32" id="checkout-section">
-                <ErrorBoundary fallback={
-                  <div className="p-6 bg-destructive/5 border border-destructive/20 rounded-xl text-center">
-                    <p className="text-destructive font-medium mb-2">Checkout is temporarily unavailable.</p>
-                    <p className="text-sm text-muted-foreground">Please try refreshing the page or contact support if the issue persists.</p>
+                <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
+                  <h3 className="text-xl font-serif font-medium mb-6 text-foreground">
+                    Subscribe to {selectedTier}
+                  </h3>
+
+                  <div className="space-y-4 mb-6">
+                    <label className="block text-sm font-medium text-foreground">Billing Cycle</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setBillingCycle('monthly')}
+                        className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${
+                          billingCycle === 'monthly'
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-border text-muted-foreground hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        Monthly
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBillingCycle('yearly')}
+                        className={`px-4 py-3 rounded-lg border text-sm font-medium transition-colors ${
+                          billingCycle === 'yearly'
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-border text-muted-foreground hover:border-muted-foreground/30'
+                        }`}
+                      >
+                        Yearly <span className="text-xs opacity-75">(save ~17%)</span>
+                      </button>
+                    </div>
                   </div>
-                }>
-                  <CheckoutFlow 
-                    selectedTier={selectedTier} 
-                    onSuccess={() => {
-                      setSelectedTier(null);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }} 
-                  />
-                </ErrorBoundary>
+
+                  <Button
+                    onClick={handleSubscribe}
+                    disabled={subscribing}
+                    className="w-full btn-premium flex items-center gap-2"
+                  >
+                    {subscribing ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>Subscribe to {selectedTier}</>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground mt-4 text-center">
+                    You will be redirected to Stripe's secure checkout to complete payment.
+                  </p>
+                </div>
               </div>
             )}
           </TabsContent>

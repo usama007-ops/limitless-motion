@@ -11,9 +11,8 @@ const fields = [
   { name: 'guest_name', label: 'Guest Name', type: 'text' },
   { name: 'category', label: 'Category', type: 'select', options: ['Workout Tutorials', 'Meal Prep', 'Coaching Tips', 'Motivational'], required: true },
   { name: 'platform', label: 'Platform', type: 'select', options: ['youtube', 'vimeo', 'self_hosted', 'other'], required: true },
-  { name: 'video_id', label: 'Video ID', type: 'text', placeholder: 'YouTube/Vimeo video ID (e.g., dQw4w9WgXcQ)' },
+  { name: 'video_source', label: 'Video Source', type: 'text', placeholder: 'Enter video URL or platform ID based on platform selection above' },
   { name: 'description', label: 'Description', type: 'textarea' },
-  { name: 'video_file_url', label: 'Video URL', type: 'text', placeholder: 'https://...' },
 ]
 
 export default function NewVideo() {
@@ -32,7 +31,14 @@ export default function NewVideo() {
       const payload = { ...data }
       if (payload.guest_name === '') delete payload.guest_name
       if (payload.description === '') delete payload.description
-      if (payload.video_file_url === '') delete payload.video_file_url
+      if (payload.platform === 'youtube' || payload.platform === 'vimeo') {
+        payload.video_id = payload.video_source
+        delete payload.video_file_url
+      } else {
+        payload.video_file_url = payload.video_source
+        delete payload.video_id
+      }
+      delete payload.video_source
       await adminCreate('videos', payload)
       router.push('/admin/videos')
     } catch (err) {
