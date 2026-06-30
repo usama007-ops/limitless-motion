@@ -118,7 +118,7 @@ const ApparelPage = () => {
                             No Image
                           </div>
                         )}
-                        {!product.inStock && (
+                        {!product.in_stock && (
                           <div className="absolute top-4 left-4 bg-background/90 text-foreground px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
                             Out of Stock
                           </div>
@@ -134,10 +134,10 @@ const ApparelPage = () => {
                         </p>
                         <Button
                           onClick={() => addToCart(product)}
-                          disabled={!product.inStock}
+                          disabled={!product.in_stock}
                           className="mt-auto w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold uppercase tracking-widest text-xs h-12"
                         >
-                          {product.inStock ? 'Add to Cart' : 'Sold Out'}
+                          {product.in_stock ? 'Add to Cart' : 'Sold Out'}
                         </Button>
                       </div>
                     </motion.div>

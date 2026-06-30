@@ -30,14 +30,23 @@ export const syncAllSubscriptions = inngest.createFunction(
         await step.run(`sync-sub-${profile.id}`, async () => {
           const subscription = await getStripe().subscriptions.retrieve(profile.stripe_subscription_id)
           const status = subscription.status
-          const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
+          const isActive = status === 'active' || status === 'trialing'
+          const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString().split('T')[0]
+
+          let tier = 'premium'
+          const productId = subscription.items?.data?.[0]?.price?.product
+          if (productId) {
+            const name = (subscription.items?.data?.[0]?.price?.nickname || '').toLowerCase()
+            if (name.includes('elite')) tier = 'elite'
+            else if (name.includes('basic')) tier = 'basic'
+          }
 
           await supabase
             .from('profiles')
             .update({
-              stripe_subscription_status: status,
-              stripe_subscription_end: currentPeriodEnd,
-              is_premium: status === 'active' || status === 'trialing',
+              is_premium: isActive,
+              current_tier: tier,
+              membership_end_date: currentPeriodEnd,
             })
             .eq('id', profile.id)
         })
@@ -62,12 +71,12 @@ export const checkExpiredMemberships = inngest.createFunction(
     const supabase = getAdminClient()
 
     const { data: expiredProfiles } = await step.run('fetch-expired-profiles', async () => {
-      const now = new Date().toISOString()
+      const today = new Date().toISOString().split('T')[0]
       return await supabase
         .from('profiles')
-        .select('id, stripe_subscription_status, stripe_subscription_end')
+        .select('id')
         .eq('is_premium', true)
-        .lt('stripe_subscription_end', now)
+        .lt('membership_end_date', today)
     })
 
     if (!expiredProfiles || expiredProfiles.length === 0) {
@@ -80,7 +89,7 @@ export const checkExpiredMemberships = inngest.createFunction(
           .from('profiles')
           .update({
             is_premium: false,
-            stripe_subscription_status: 'expired',
+            current_tier: null,
           })
           .eq('id', profile.id)
       })

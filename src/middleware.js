@@ -1,12 +1,25 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
-const protectedPaths = [
+const authProtectedPaths = [
   '/dashboard', '/membership-upgrade', '/success', '/cancel',
   '/align', '/burn', '/move', '/think', '/threads',
   '/fuel', '/track', '/ethiopian-fasting', '/ethiopian-non-fasting',
   '/calorie-calculator', '/meal-plan',
   '/resources', '/community', '/admin',
+  '/lets-think', '/lets-wear',
+]
+
+const premiumPaths = [
+  '/dashboard', '/align', '/burn', '/move', '/think',
+  '/fuel', '/track', '/threads',
+  '/ethiopian-fasting', '/ethiopian-non-fasting',
+  '/calorie-calculator', '/meal-plan',
+]
+
+const freeAuthPaths = [
+  '/membership-upgrade', '/success', '/cancel',
+  '/resources', '/community',
   '/lets-think', '/lets-wear',
 ]
 
@@ -18,10 +31,11 @@ const publicPaths = [
 export async function middleware(request) {
   const { pathname } = request.nextUrl
 
-  const isProtected = protectedPaths.some(path => pathname.startsWith(path))
+  const isAuthProtected = authProtectedPaths.some(path => pathname.startsWith(path))
   const isPublic = publicPaths.some(path => pathname === path) || pathname === '/'
+  const isPremium = premiumPaths.some(path => pathname.startsWith(path))
 
-  if (!isProtected && !isPublic) {
+  if (!isAuthProtected && !isPublic) {
     return NextResponse.next()
   }
 
@@ -56,6 +70,7 @@ export async function middleware(request) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  // Admin routes — check role
   if (pathname.startsWith('/admin')) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -65,6 +80,20 @@ export async function middleware(request) {
 
     if (profile?.role !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return response
+  }
+
+  // Premium routes — check is_premium
+  if (isPremium) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_premium, role')
+      .eq('id', session.user.id)
+      .single()
+
+    if (!profile?.is_premium && profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/membership-upgrade', request.url))
     }
   }
 

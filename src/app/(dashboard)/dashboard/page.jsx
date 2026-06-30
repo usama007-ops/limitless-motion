@@ -6,14 +6,28 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dumbbell, TrendingUp, Calendar, ArrowRight, Activity, Utensils } from 'lucide-react';
+import { Dumbbell, TrendingUp, Calendar, ArrowRight, Activity, Utensils, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getWorkoutStats, getWorkoutStreak } from '@/db';
+import { getWorkoutStats, getWorkoutStreak, getLatestAffirmation } from '@/db';
+
+const fallbackAffirmation = {
+  id: '1',
+  text: 'Your only limit is the one you set in your mind. Every rep, every set, every day brings you closer to the best version of yourself.',
+};
+
+function isAfter6amET() {
+  const now = new Date();
+  const etOffset = -4; // EDT (UTC-4) — DST is observed June 30
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const etHour = new Date(utc + etOffset * 3600000).getHours();
+  return etHour >= 6;
+}
 
 const ClientDashboard = () => {
   const { currentUser } = useAuth();
   const [stats, setStats] = useState({ totalWorkouts: 0, recentWorkouts: [] });
   const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0 });
+  const [affirmation, setAffirmation] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,14 +38,16 @@ const ClientDashboard = () => {
     if (!currentUser) return;
     setLoading(true);
     try {
-      const [statsData, streakData] = await Promise.all([
+      const [statsData, streakData, aff] = await Promise.all([
         getWorkoutStats(currentUser.id),
         getWorkoutStreak(currentUser.id),
+        getLatestAffirmation(),
       ]);
       setStats(statsData);
       setStreak(streakData);
+      setAffirmation(aff || fallbackAffirmation);
     } catch (e) {
-      console.error('Failed to load dashboard stats:', e);
+      console.error('Failed to load dashboard data:', e);
     }
     setLoading(false);
   }, [currentUser]);
@@ -41,6 +57,8 @@ const ClientDashboard = () => {
   }, [fetchData]);
 
   const lastWorkout = stats.recentWorkouts?.[0];
+
+  const showAffirmation = isAfter6amET() && affirmation?.text;
 
   return (
     <div className="pt-32 pb-24">
@@ -59,6 +77,22 @@ const ClientDashboard = () => {
             </p>
           </div>
         </motion.div>
+
+        {/* Daily Affirmation Banner — visible after 6AM ET */}
+        {showAffirmation && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 p-6 md:p-10 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 text-center relative overflow-hidden"
+          >
+            <Sparkles className="absolute top-3 left-3 text-primary/40" size={24} />
+            <Sparkles className="absolute bottom-3 right-3 text-primary/40" size={24} />
+            <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Daily Affirmation</p>
+            <h2 className="text-xl md:text-3xl font-serif italic text-foreground leading-relaxed max-w-3xl mx-auto">
+              &ldquo;{affirmation.text}&rdquo;
+            </h2>
+          </motion.div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">

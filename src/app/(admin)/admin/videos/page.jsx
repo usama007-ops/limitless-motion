@@ -13,6 +13,7 @@ const columns = [
   { key: 'title', label: 'Title', sortable: true },
   { key: 'guest_name', label: 'Guest', sortable: true },
   { key: 'category', label: 'Category', sortable: true },
+  { key: 'platform', label: 'Platform', sortable: true, render: (val) => val ? val.replace(/_/g, ' ') : '-' },
   { key: 'view_count', label: 'Views', sortable: true },
   { key: 'upload_date', label: 'Upload Date', sortable: true, render: (val) => val ? new Date(val).toLocaleDateString() : '-' },
 ]

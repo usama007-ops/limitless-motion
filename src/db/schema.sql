@@ -534,6 +534,8 @@ create table if not exists public.videos (
   video_file_url text,
   guest_name text,
   category text check (category in ('Workout Tutorials', 'Meal Prep', 'Coaching Tips', 'Motivational')),
+  platform text check (platform in ('youtube', 'vimeo', 'self_hosted', 'other')) default 'self_hosted',
+  video_id text,
   view_count numeric default 0,
   upload_date timestamptz default now(),
   created_at timestamptz default now(),

@@ -2,6 +2,16 @@ import { inngest } from '../client'
 import { getAdminClient } from '@/lib/supabaseAdmin'
 import { getStripe } from '@/lib/stripe'
 
+function tierFromSubscription(sub) {
+  const productId = sub.items?.data?.[0]?.price?.product
+  if (!productId) return 'premium'
+  const name = (sub.items?.data?.[0]?.price?.nickname || '').toLowerCase()
+  if (name.includes('elite')) return 'elite'
+  if (name.includes('premium')) return 'premium'
+  if (name.includes('basic')) return 'basic'
+  return 'premium'
+}
+
 export const handleCheckoutCompleted = inngest.createFunction(
   { id: 'handle-checkout-completed', name: 'Handle Checkout Session Completed' },
   { event: 'stripe/checkout.completed' },
@@ -22,7 +32,10 @@ export const handleCheckoutCompleted = inngest.createFunction(
 
     await step.run('update-profile', async () => {
       const supabase = getAdminClient()
-      const updates = { stripe_customer_id: customerId }
+      const updates = {
+        stripe_customer_id: customerId,
+        is_premium: true,
+      }
       if (subscriptionId) updates.stripe_subscription_id = subscriptionId
       await supabase.from('profiles').update(updates).eq('id', userId)
     })
@@ -43,7 +56,9 @@ export const handleSubscriptionUpdated = inngest.createFunction(
 
     const customerId = subscription.customer
     const status = subscription.status
-    const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
+    const isActive = status === 'active' || status === 'trialing'
+    const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString().split('T')[0]
+    const tier = tierFromSubscription(subscription)
 
     await step.run('update-profile', async () => {
       const supabase = getAdminClient()
@@ -56,16 +71,15 @@ export const handleSubscriptionUpdated = inngest.createFunction(
         await supabase
           .from('profiles')
           .update({
-            stripe_subscription_id: subscriptionId,
-            stripe_subscription_status: status,
-            stripe_subscription_end: currentPeriodEnd,
-            is_premium: status === 'active' || status === 'trialing',
+            is_premium: isActive,
+            current_tier: tier,
+            membership_end_date: currentPeriodEnd,
           })
           .eq('id', profiles[0].id)
       }
     })
 
-    return { processed: true, customerId, status }
+    return { processed: true, customerId, status, tier }
   }
 )
 
@@ -76,7 +90,7 @@ export const handleInvoicePaid = inngest.createFunction(
     const { invoiceId } = event.data
 
     const invoice = await step.run('fetch-invoice', async () => {
-      return await stripe.invoices.retrieve(invoiceId)
+      return await getStripe().invoices.retrieve(invoiceId)
     })
 
     const customerId = invoice.customer
@@ -92,12 +106,10 @@ export const handleInvoicePaid = inngest.createFunction(
       if (profiles && profiles.length > 0) {
         await supabase.from('payment_history').insert({
           user_id: profiles[0].id,
-          invoice_id: invoiceId,
           amount: amount / 100,
           currency: invoice.currency,
           status: 'completed',
           receipt_url: invoice.receipt_url,
-          description: `Invoice ${invoiceId}`,
         })
       }
     })
@@ -113,7 +125,7 @@ export const handleInvoicePaymentFailed = inngest.createFunction(
     const { invoiceId } = event.data
 
     const invoice = await step.run('fetch-invoice', async () => {
-      return await stripe.invoices.retrieve(invoiceId)
+      return await getStripe().invoices.retrieve(invoiceId)
     })
 
     const customerId = invoice.customer
@@ -129,12 +141,10 @@ export const handleInvoicePaymentFailed = inngest.createFunction(
       if (profiles && profiles.length > 0) {
         await supabase.from('payment_history').insert({
           user_id: profiles[0].id,
-          invoice_id: invoiceId,
           amount: amount / 100,
           currency: invoice.currency,
           status: 'failed',
           receipt_url: invoice.receipt_url,
-          description: `Failed invoice ${invoiceId}`,
         })
       }
     })

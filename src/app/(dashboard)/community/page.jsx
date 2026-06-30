@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import CommunityPostForm from '@/components/community/CommunityPostForm.jsx';
 import CommentSection from '@/components/community/CommentSection.jsx';
 import SuccessStoriesGallery from '@/components/community/SuccessStoriesGallery.jsx';
+import ShareSuccessStory from '@/components/community/ShareSuccessStory.jsx';
 import { toast } from 'sonner';
 import { getCommunityPosts, getLatestAffirmation } from '@/db';
 
@@ -66,6 +67,7 @@ const CommunityPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showPostForm, setShowPostForm] = useState(false);
+  const [showSuccessStoryForm, setShowSuccessStoryForm] = useState(false);
 
   useEffect(() => {
     document.title = 'Community Hub - Limitless Motion';
@@ -215,9 +217,21 @@ const CommunityPage = () => {
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
               Discover how the Limitless Motion community is transforming lives through dedicated coaching, tailored nutrition, and consistent effort.
             </p>
+            <Button
+              onClick={() => setShowSuccessStoryForm(true)}
+              variant="outline"
+              className="mt-6 gap-2 rounded-full"
+            >
+              <Trophy size={16} /> Share Your Success Story
+            </Button>
           </div>
 
           <SuccessStoriesGallery />
+
+          <ShareSuccessStory
+            open={showSuccessStoryForm}
+            onClose={() => setShowSuccessStoryForm(false)}
+          />
         </section>
 
         {/* Community Feed Section */}

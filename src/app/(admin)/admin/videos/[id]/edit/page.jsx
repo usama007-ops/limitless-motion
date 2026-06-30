@@ -11,6 +11,8 @@ const fields = [
   { name: 'title', label: 'Title', type: 'text', required: true },
   { name: 'guest_name', label: 'Guest Name', type: 'text' },
   { name: 'category', label: 'Category', type: 'select', options: ['Workout Tutorials', 'Meal Prep', 'Coaching Tips', 'Motivational'], required: true },
+  { name: 'platform', label: 'Platform', type: 'select', options: ['youtube', 'vimeo', 'self_hosted', 'other'], required: true },
+  { name: 'video_id', label: 'Video ID', type: 'text', placeholder: 'YouTube/Vimeo video ID (e.g., dQw4w9WgXcQ)' },
   { name: 'description', label: 'Description', type: 'textarea' },
   { name: 'video_file_url', label: 'Video URL', type: 'text', placeholder: 'https://...' },
 ]
@@ -43,6 +45,7 @@ export default function EditVideo() {
       if (payload.guest_name === '') delete payload.guest_name
       if (payload.description === '') delete payload.description
       if (payload.video_file_url === '') delete payload.video_file_url
+      if (payload.video_id === '') delete payload.video_id
       await adminUpdate('videos', params.id, payload)
       setSuccess(true)
     } catch (err) { setError(err.message) }

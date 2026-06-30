@@ -6,6 +6,7 @@ import { Play, Headphones, Filter, Loader2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import VideoPlayer from '@/components/shared/VideoPlayer.jsx';
 import { getVideos, getPodcasts } from '@/db';
 
 const CATEGORIES = ['All', 'Workout Tutorials', 'Meal Prep', 'Coaching Tips', 'Motivational'];
@@ -16,6 +17,8 @@ const fallbackVideos = [
     title: 'Full Body Workout for Beginners',
     description: 'A complete full body routine designed for beginners to build strength and confidence in the gym.',
     category: 'Workout Tutorials',
+    platform: 'youtube',
+    videoId: 'dQw4w9WgXcQ',
     uploadDate: '2025-11-15',
     viewCount: 1240,
   },
@@ -24,6 +27,8 @@ const fallbackVideos = [
     title: 'Meal Prep Sunday: High Protein Meals',
     description: 'Learn how to prep a full week of high-protein, low-calorie meals in under 2 hours.',
     category: 'Meal Prep',
+    platform: 'self_hosted',
+    videoId: '',
     uploadDate: '2025-11-10',
     viewCount: 892,
   },
@@ -32,6 +37,8 @@ const fallbackVideos = [
     title: 'Coaching Tip: Perfect Your Squat Form',
     description: 'Coach breaks down the key components of a perfect squat to maximize results and prevent injury.',
     category: 'Coaching Tips',
+    platform: 'youtube',
+    videoId: 'dQw4w9WgXcQ',
     uploadDate: '2025-11-05',
     viewCount: 2156,
   },
@@ -40,6 +47,8 @@ const fallbackVideos = [
     title: 'Why Consistency Beats Intensity',
     description: 'A motivational deep dive into why showing up daily matters more than going all-out once a week.',
     category: 'Motivational',
+    platform: 'self_hosted',
+    videoId: '',
     uploadDate: '2025-11-01',
     viewCount: 3421,
   },
@@ -94,6 +103,8 @@ const ResourcesPage = () => {
             ...v,
             uploadDate: v.upload_date,
             viewCount: v.view_count,
+            platform: v.platform || 'self_hosted',
+            videoId: v.video_id || '',
           })));
         } else {
           setVideos(fallbackVideos);
@@ -184,11 +195,13 @@ const ResourcesPage = () => {
                       transition={{ duration: 0.4, delay: index * 0.1 }}
                     >
                       <Card className="h-full flex flex-col overflow-hidden border-border hover:border-primary/50 transition-all duration-300">
-                        <div className="aspect-video bg-muted relative group">
-                          <div className="absolute inset-0 flex items-center justify-center bg-secondary/10">
-                            <Play size={48} className="text-muted-foreground/50" />
-                          </div>
-                        </div>
+                        <VideoPlayer
+                          videoUrl={video.video_file_url}
+                          title={video.title}
+                          description={video.description}
+                          platform={video.platform}
+                          videoId={video.videoId}
+                        />
                         <CardContent className="p-6 flex-grow flex flex-col">
                           <div className="flex justify-between items-start mb-3">
                             <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded">
@@ -202,8 +215,13 @@ const ResourcesPage = () => {
                           <p className="text-muted-foreground text-sm line-clamp-3 mb-4 flex-grow">
                             {video.description}
                           </p>
-                          <div className="text-xs text-muted-foreground mt-auto">
-                            {video.viewCount || 0} views
+                          <div className="flex items-center justify-between mt-auto">
+                            <span className="text-xs font-medium uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded">
+                              {video.platform?.replace(/_/g, ' ') || 'Self Hosted'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {video.viewCount || 0} views
+                            </span>
                           </div>
                         </CardContent>
                       </Card>
