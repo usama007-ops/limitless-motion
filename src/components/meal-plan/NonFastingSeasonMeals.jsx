@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Beef, AlertCircle, RefreshCcw } from 'lucide-react';
-import { getEthiopianMeals } from '@/db';
+import { getMealRecipes } from '@/db';
 import MealCard from './MealCard.jsx';
 
 const NonFastingSeasonMeals = () => {
@@ -14,8 +14,11 @@ const NonFastingSeasonMeals = () => {
     setLoading(true);
     setError(null);
     try {
-      const records = await getEthiopianMeals();
-      setMeals(records || []);
+      const records = await getMealRecipes();
+      const filtered = (records || []).filter(r =>
+        !r.season || r.season === 'non-fasting' || r.season === 'both'
+      );
+      setMeals(filtered);
     } catch (err) {
       console.error('Error fetching meals:', err);
       setError('Failed to load meals. Please try again.');
@@ -35,7 +38,7 @@ const NonFastingSeasonMeals = () => {
           <Beef className="w-8 h-8 text-primary" />
           Non-Fasting Season Meals
         </h2>
-        <p className="text-muted-foreground text-lg">Rich, protein-dense traditional dishes.</p>
+        <p className="text-muted-foreground text-lg">Standard meals for non-fasting season — balanced macros for everyday nutrition.</p>
       </div>
 
       {loading ? (

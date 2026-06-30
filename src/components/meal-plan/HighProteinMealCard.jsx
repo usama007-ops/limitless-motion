@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Flame } from 'lucide-react';
+import MealImage from './MealImage.jsx';
 
 const HighProteinMealCard = ({ meal }) => {
   const imageUrl = meal?.imageUrl || meal?.image_url || meal?.image;
@@ -11,18 +12,7 @@ const HighProteinMealCard = ({ meal }) => {
   return (
     <Card className="overflow-hidden border-border bg-card shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
       <div className="relative w-full aspect-[4/3] bg-muted shrink-0 overflow-hidden">
-        {imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={meal?.name || 'High Protein Meal'} 
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground bg-muted">
-            <span className="text-sm font-medium">No image</span>
-          </div>
-        )}
+        <MealImage src={imageUrl} name={meal?.name} alt={meal?.name} />
       </div>
       <CardHeader className="pb-3 pt-6">
         <div className="flex items-start justify-between gap-3 mb-2">

@@ -2,21 +2,17 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Flame } from 'lucide-react';
+import MealImage from './MealImage.jsx';
 
 const FastingBreakfastCard = ({ meal }) => {
-  const imageUrl = meal?.imageUrl || meal?.image_url || meal?.image || 'https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/6bb01ef1eb4fd954c7bc71f7d8928952.png';
+  const imageUrl = meal?.imageUrl || meal?.image_url || meal?.image;
   const prepTime = meal?.prepTimeMinutes ?? meal?.prep_time_minutes ?? 0;
   const calories = meal?.caloriesTotal ?? meal?.calories_total ?? 0;
 
   return (
     <Card className="overflow-hidden border-border bg-card shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
       <div className="relative w-full aspect-[4/3] bg-muted shrink-0 overflow-hidden">
-        <img 
-          src={imageUrl} 
-          alt={meal?.name || 'Breakfast Preview'} 
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
+        <MealImage src={imageUrl} name={meal?.name} alt={meal?.name} />
         {meal?.isFeatured && (
           <div className="absolute top-3 left-3 z-10">
             <Badge className="bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm">

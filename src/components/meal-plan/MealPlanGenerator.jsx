@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Wand2, Loader2, Target, Info, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,23 +6,82 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getMealRecipes, getEthiopianMeals, getHighProteinMeals, getFastingBreakfasts } from '@/db';
 import { ethiopianFasting, ethiopianNonFasting, globalHighProtein } from '@/data/FoodListsData.js';
 
-const PreviewGrid = ({ items, isHighProtein }) => (
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-    {items.slice(0, 4).map((item, idx) => (
-      <div key={idx} className="group relative rounded-xl overflow-hidden aspect-square border border-border bg-secondary/50 flex flex-col justify-end p-4 hover:bg-secondary transition-colors duration-300">
-        <p className="text-secondary-foreground text-sm font-bold leading-tight line-clamp-2">{item.name}</p>
-        <p className="text-secondary-foreground/80 text-[10px] font-medium uppercase tracking-wider mt-2">{item.calories} kcal</p>
+function normalize(recipe) {
+  return {
+    name: recipe.name,
+    calories: recipe.calories ?? recipe.calories_total ?? 0,
+  };
+}
+
+const PreviewGrid = ({ items, loading }) => {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="rounded-xl aspect-square bg-secondary/30 animate-pulse" />
+        ))}
       </div>
-    ))}
-  </div>
-);
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+      {items.slice(0, 4).map((item, idx) => (
+        <div key={idx} className="group relative rounded-xl overflow-hidden aspect-square border border-border bg-secondary/50 flex flex-col justify-end p-4 hover:bg-secondary transition-colors duration-300">
+          <p className="text-secondary-foreground text-sm font-bold leading-tight line-clamp-2">{item.name}</p>
+          <p className="text-secondary-foreground/80 text-[10px] font-medium uppercase tracking-wider mt-2">{item.calories} kcal</p>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const MealPlanGenerator = ({ initialMacros, onGenerate, loading, error }) => {
   const [duration, setDuration] = useState(4);
   const [category, setCategory] = useState('global');
   const [macros, setMacros] = useState(initialMacros || { calories: 2200, protein: 160, carbs: 200, fats: 65 });
+
+  const [previews, setPreviews] = useState({
+    global: globalHighProtein.map(normalize),
+    'ethiopian-fasting': ethiopianFasting.map(normalize),
+    'ethiopian-non-fasting': ethiopianNonFasting.map(normalize),
+  });
+  const [previewsLoading, setPreviewsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setPreviewsLoading(true);
+      try {
+        const [mr, hp, eth, fb] = await Promise.all([
+          getMealRecipes(),
+          getHighProteinMeals(),
+          getEthiopianMeals(),
+          getFastingBreakfasts(),
+        ]);
+
+        if (cancelled) return;
+
+        const nonFastingRecipe = (mr || []).filter(r =>
+          !r.season || r.season === 'non-fasting' || r.season === 'both'
+        );
+
+        setPreviews({
+          global: [...nonFastingRecipe, ...(hp || [])].map(normalize),
+          'ethiopian-fasting': [...(eth || []), ...(fb || [])].map(normalize),
+          'ethiopian-non-fasting': [...(eth || []), ...(hp || [])].map(normalize),
+        });
+      } catch {
+        // keep hardcoded fallbacks
+      } finally {
+        if (!cancelled) setPreviewsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleMacroChange = (e) => {
     const { name, value } = e.target;
@@ -108,7 +167,7 @@ const MealPlanGenerator = ({ initialMacros, onGenerate, loading, error }) => {
                   <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   Fitness-optimized international cuisine. Focused on ultra-lean proteins, complex carbohydrates, and functional macro distributions for maximum physical performance.
                 </p>
-                <PreviewGrid items={globalHighProtein} isHighProtein={true} />
+                <PreviewGrid items={previews.global} loading={previewsLoading} />
               </div>
             </TabsContent>
             
@@ -118,7 +177,7 @@ const MealPlanGenerator = ({ initialMacros, onGenerate, loading, error }) => {
                   <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   100% plant-based Ethiopian cuisine complying with Orthodox fasting rules. Rich in fiber, legumes, and nutrient-dense Teff to support sustained energy and gut health.
                 </p>
-                <PreviewGrid items={ethiopianFasting} isHighProtein={false} />
+                <PreviewGrid items={previews['ethiopian-fasting']} loading={previewsLoading} />
               </div>
             </TabsContent>
             
@@ -128,7 +187,7 @@ const MealPlanGenerator = ({ initialMacros, onGenerate, loading, error }) => {
                   <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   Traditional Ethiopian dishes including meats and dairy. Features robust stews, lean beef preparations (like Kitfo), and high-protein chicken dishes.
                 </p>
-                <PreviewGrid items={ethiopianNonFasting} isHighProtein={false} />
+                <PreviewGrid items={previews['ethiopian-non-fasting']} loading={previewsLoading} />
               </div>
             </TabsContent>
           </Tabs>
