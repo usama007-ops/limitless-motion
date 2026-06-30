@@ -11,7 +11,7 @@ const fields = [
   { name: 'name', label: 'Meal Name', type: 'text', required: true },
   { name: 'description', label: 'Description', type: 'textarea', rows: 3 },
   { name: 'category', label: 'Category', type: 'select', options: ['breakfast', 'lunch', 'dinner', 'snack'], required: true },
-  { name: 'ingredients', label: 'Ingredients (JSON)', type: 'json', rows: 5 },
+  { name: 'ingredients', label: 'Ingredients', type: 'repeater', itemLabel: 'Ingredient', itemType: 'simple' },
   { name: 'instructions', label: 'Instructions', type: 'textarea', rows: 6 },
   { name: 'protein_grams', label: 'Protein (g)', type: 'number' },
   { name: 'calories_total', label: 'Calories', type: 'number' },
@@ -37,7 +37,7 @@ export default function EditHighProteinMeal() {
   async function handleSubmit(data) {
     setSaving(true); setError(null); setSuccess(false)
     try {
-      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : f.type === 'json' ? (typeof v === 'string' ? JSON.parse(v) : v) : v })
+      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : v })
       await adminUpdate('high_protein_meals', params.id, payload); setSuccess(true)
     } catch (err) { setError(err.message) }
     finally { setSaving(false) }

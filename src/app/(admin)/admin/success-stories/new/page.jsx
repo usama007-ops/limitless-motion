@@ -19,8 +19,11 @@ const fields = [
   { name: 'workout_consistency', label: 'Workout Consistency (0-100)', type: 'number', helpText: 'Percentage value between 0 and 100' },
   { name: 'before_photo_url', label: 'Before Photo URL', type: 'text', placeholder: 'https://...' },
   { name: 'after_photo_url', label: 'After Photo URL', type: 'text', placeholder: 'https://...' },
-  { name: 'metrics', label: 'Metrics (JSON)', type: 'json', rows: 4, helpText: 'e.g. {"weight_lost": 20, "body_fat_percent_change": 5}' },
-  { name: 'milestones', label: 'Milestones (JSON)', type: 'json', rows: 4, helpText: 'Array of milestone strings' },
+  { name: 'metrics', label: 'Metrics', type: 'repeater', itemLabel: 'Metric', fields: [
+    { name: 'key', label: 'Key', type: 'text' },
+    { name: 'value', label: 'Value', type: 'text' },
+  ] },
+  { name: 'milestones', label: 'Milestones', type: 'repeater', itemLabel: 'Milestone', itemType: 'simple' },
 ]
 
 export default function NewSuccessStory() {
@@ -29,7 +32,7 @@ export default function NewSuccessStory() {
   async function handleSubmit(data) {
     setLoading(true); setError(null)
     try {
-      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : f.type === 'json' ? (typeof v === 'string' ? JSON.parse(v) : v) : v })
+      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : (f.name === 'metrics' && Array.isArray(v)) ? Object.fromEntries(v.map(m => [m.key, isNaN(Number(m.value)) ? m.value : Number(m.value)])) : v })
       await adminCreate('success_stories', payload); router.push('/admin/success-stories')
     } catch (err) { setError(err.message); setLoading(false) }
   }

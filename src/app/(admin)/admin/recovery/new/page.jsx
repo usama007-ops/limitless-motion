@@ -11,7 +11,11 @@ const fields = [
   { name: 'type', label: 'Type', type: 'select', options: ['stretch', 'mobility', 'breathing'], required: true },
   { name: 'duration', label: 'Duration (minutes)', type: 'number' },
   { name: 'instructions', label: 'Instructions', type: 'textarea', rows: 6 },
-  { name: 'stretches', label: 'Stretches/Exercises (JSON)', type: 'json', rows: 6, helpText: 'Array of objects with name, duration, instructions' },
+  { name: 'stretches', label: 'Stretches/Exercises', type: 'repeater', itemLabel: 'Stretch', fields: [
+    { name: 'name', label: 'Name', type: 'text' },
+    { name: 'duration', label: 'Duration', type: 'text' },
+    { name: 'instructions', label: 'Instructions', type: 'textarea' },
+  ] },
 ]
 
 export default function NewRecovery() {
@@ -20,7 +24,7 @@ export default function NewRecovery() {
   async function handleSubmit(data) {
     setLoading(true); setError(null)
     try {
-      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : f.type === 'json' ? (typeof v === 'string' ? JSON.parse(v) : v) : v })
+      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : v })
       await adminCreate('recovery_flows', payload); router.push('/admin/recovery')
     } catch (err) { setError(err.message); setLoading(false) }
   }

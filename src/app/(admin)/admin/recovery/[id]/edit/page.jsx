@@ -12,7 +12,11 @@ const fields = [
   { name: 'type', label: 'Type', type: 'select', options: ['stretch', 'mobility', 'breathing'], required: true },
   { name: 'duration', label: 'Duration (minutes)', type: 'number' },
   { name: 'instructions', label: 'Instructions', type: 'textarea', rows: 6 },
-  { name: 'stretches', label: 'Stretches/Exercises (JSON)', type: 'json', rows: 6 },
+  { name: 'stretches', label: 'Stretches/Exercises', type: 'repeater', itemLabel: 'Stretch', fields: [
+    { name: 'name', label: 'Name', type: 'text' },
+    { name: 'duration', label: 'Duration', type: 'text' },
+    { name: 'instructions', label: 'Instructions', type: 'textarea' },
+  ] },
 ]
 
 export default function EditRecovery() {
@@ -31,7 +35,7 @@ export default function EditRecovery() {
   async function handleSubmit(data) {
     setSaving(true); setError(null); setSuccess(false)
     try {
-      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : f.type === 'json' ? (typeof v === 'string' ? JSON.parse(v) : v) : v })
+      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : v })
       await adminUpdate('recovery_flows', params.id, payload); setSuccess(true)
     } catch (err) { setError(err.message) }
     finally { setSaving(false) }

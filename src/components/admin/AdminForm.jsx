@@ -102,18 +102,28 @@ export default function AdminForm({ fields, initialValues, onSubmit, submitLabel
 
     if (field.type === 'repeater') {
       const items = Array.isArray(val) ? val : []
+      const isSimple = field.itemType === 'simple'
       const subFields = field.fields || []
       const addItem = () => {
-        const newItem = {}
-        subFields.forEach(f => { newItem[f.name] = '' })
-        handleChange(field.name, [...items, newItem])
+        if (isSimple) {
+          handleChange(field.name, [...items, ''])
+        } else {
+          const newItem = {}
+          subFields.forEach(f => { newItem[f.name] = '' })
+          handleChange(field.name, [...items, newItem])
+        }
       }
       const removeItem = (idx) => {
         handleChange(field.name, items.filter((_, i) => i !== idx))
       }
       const updateItem = (idx, subName, subValue) => {
-        const updated = items.map((item, i) => i === idx ? { ...item, [subName]: subValue } : item)
-        handleChange(field.name, updated)
+        if (isSimple) {
+          const updated = items.map((item, i) => i === idx ? subValue : item)
+          handleChange(field.name, updated)
+        } else {
+          const updated = items.map((item, i) => i === idx ? { ...item, [subName]: subValue } : item)
+          handleChange(field.name, updated)
+        }
       }
       return (
         <div className="space-y-3">
@@ -126,28 +136,40 @@ export default function AdminForm({ fields, initialValues, onSubmit, submitLabel
               >
                 Remove
               </button>
-              <div className="grid grid-cols-2 gap-3">
-                {subFields.map((sf) => (
-                  <div key={sf.name} className={sf.type === 'textarea' ? 'col-span-2' : ''}>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">{sf.label}</label>
-                    {sf.type === 'textarea' ? (
-                      <textarea
-                        rows={2}
-                        value={item[sf.name] || ''}
-                        onChange={(e) => updateItem(idx, sf.name, e.target.value)}
-                        className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/30"
-                      />
-                    ) : (
-                      <input
-                        type={sf.type === 'number' ? 'number' : 'text'}
-                        value={item[sf.name] || ''}
-                        onChange={(e) => updateItem(idx, sf.name, e.target.value)}
-                        className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/30"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+              {isSimple ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground shrink-0">#{idx + 1}</span>
+                  <input
+                    type="text"
+                    value={item || ''}
+                    onChange={(e) => updateItem(idx, null, e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {subFields.map((sf) => (
+                    <div key={sf.name} className={sf.type === 'textarea' ? 'col-span-2' : ''}>
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">{sf.label}</label>
+                      {sf.type === 'textarea' ? (
+                        <textarea
+                          rows={2}
+                          value={item[sf.name] || ''}
+                          onChange={(e) => updateItem(idx, sf.name, e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        />
+                      ) : (
+                        <input
+                          type={sf.type === 'number' ? 'number' : 'text'}
+                          value={item[sf.name] || ''}
+                          onChange={(e) => updateItem(idx, sf.name, e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           <button

@@ -20,8 +20,11 @@ const fields = [
   { name: 'workout_consistency', label: 'Workout Consistency (0-100)', type: 'number', helpText: 'Percentage value between 0 and 100' },
   { name: 'before_photo_url', label: 'Before Photo URL', type: 'text', placeholder: 'https://...' },
   { name: 'after_photo_url', label: 'After Photo URL', type: 'text', placeholder: 'https://...' },
-  { name: 'metrics', label: 'Metrics (JSON)', type: 'json', rows: 4 },
-  { name: 'milestones', label: 'Milestones (JSON)', type: 'json', rows: 4 },
+  { name: 'metrics', label: 'Metrics', type: 'repeater', itemLabel: 'Metric', fields: [
+    { name: 'key', label: 'Key', type: 'text' },
+    { name: 'value', label: 'Value', type: 'text' },
+  ] },
+  { name: 'milestones', label: 'Milestones', type: 'repeater', itemLabel: 'Milestone', itemType: 'simple' },
 ]
 
 export default function EditSuccessStory() {
@@ -30,7 +33,7 @@ export default function EditSuccessStory() {
   const [error, setError] = useState(null); const [success, setSuccess] = useState(false)
 
   const fetchData = useCallback(async () => {
-    try { const data = await getSuccessStories(); const found = (data || []).find((v) => v.id === params.id); if (!found) throw new Error('Not found'); setItem(found) }
+    try { const data = await getSuccessStories(); const found = (data || []).find((v) => v.id === params.id); if (!found) throw new Error('Not found'); if (found?.metrics && typeof found.metrics === 'object' && !Array.isArray(found.metrics)) { found.metrics = Object.entries(found.metrics).map(([k, v]) => ({ key: k, value: String(v) })) }; setItem(found) }
     catch (err) { setError(err.message) }
     finally { setLoading(false) }
   }, [params.id])
@@ -40,7 +43,7 @@ export default function EditSuccessStory() {
   async function handleSubmit(data) {
     setSaving(true); setError(null); setSuccess(false)
     try {
-      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : f.type === 'json' ? (typeof v === 'string' ? JSON.parse(v) : v) : v })
+      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : (f.name === 'metrics' && Array.isArray(v)) ? Object.fromEntries(v.map(m => [m.key, isNaN(Number(m.value)) ? m.value : Number(m.value)])) : v })
       await adminUpdate('success_stories', params.id, payload); setSuccess(true)
     } catch (err) { setError(err.message) }
     finally { setSaving(false) }

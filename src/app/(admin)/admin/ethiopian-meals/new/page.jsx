@@ -10,7 +10,7 @@ const fields = [
   { name: 'name', label: 'Meal Name', type: 'text', required: true },
   { name: 'description', label: 'Description', type: 'textarea', rows: 3 },
   { name: 'category', label: 'Category', type: 'select', options: ['breakfast', 'lunch', 'dinner', 'snack'], required: true },
-  { name: 'ingredients', label: 'Ingredients (JSON)', type: 'json', rows: 5 },
+  { name: 'ingredients', label: 'Ingredients', type: 'repeater', itemLabel: 'Ingredient', itemType: 'simple' },
   { name: 'meal_prep_instructions', label: 'Instructions', type: 'textarea', rows: 6 },
   { name: 'calories_total', label: 'Calories', type: 'number' },
   { name: 'protein_grams', label: 'Protein (g)', type: 'number' },
@@ -26,7 +26,7 @@ export default function NewEthiopianMeal() {
   async function handleSubmit(data) {
     setLoading(true); setError(null)
     try {
-      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : f.type === 'json' ? (typeof v === 'string' ? JSON.parse(v) : v) : v })
+      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : v })
       await adminCreate('ethiopian_meals', payload); router.push('/admin/ethiopian-meals')
     } catch (err) { setError(err.message); setLoading(false) }
   }

@@ -11,7 +11,7 @@ const fields = [
   { name: 'category', label: 'Category', type: 'select', options: ['breakfast', 'lunch', 'dinner', 'snack'], required: true },
   { name: 'season', label: 'Season', type: 'select', options: ['fasting', 'non-fasting', 'both'] },
   { name: 'description', label: 'Description', type: 'textarea', rows: 3 },
-  { name: 'ingredients', label: 'Ingredients (JSON)', type: 'json', rows: 5, helpText: 'Array of ingredient strings' },
+  { name: 'ingredients', label: 'Ingredients', type: 'repeater', itemLabel: 'Ingredient', itemType: 'simple' },
   { name: 'instructions', label: 'Instructions', type: 'textarea', rows: 6 },
   { name: 'calories_total', label: 'Calories', type: 'number' },
   { name: 'protein_grams', label: 'Protein (g)', type: 'number' },
@@ -28,7 +28,7 @@ export default function NewMealRecipe() {
   async function handleSubmit(data) {
     setLoading(true); setError(null)
     try {
-      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : f.type === 'json' ? (typeof v === 'string' ? JSON.parse(v) : v) : v })
+      const payload = {}; fields.forEach((f) => { const v = data[f.name]; if (v !== '' && v != null) payload[f.name] = f.type === 'number' ? Number(v) : v })
       await adminCreate('meal_recipes', payload); router.push('/admin/meal-recipes')
     } catch (err) { setError(err.message); setLoading(false) }
   }
