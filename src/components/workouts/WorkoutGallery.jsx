@@ -76,8 +76,22 @@ const WorkoutGallery = ({ refreshTrigger }) => {
                 className="bg-card rounded-2xl overflow-hidden border border-border flex flex-col group shadow-sm"
               >
                 <div className="aspect-video bg-black relative">
-                  {workout.video_file_url ? (
-                    <video 
+                  {workout.platform === 'youtube' && workout.video_id ? (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${workout.video_id}`}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  ) : workout.platform === 'vimeo' && workout.video_id ? (
+                    <iframe
+                      src={`https://player.vimeo.com/video/${workout.video_id}`}
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  ) : workout.video_file_url ? (
+                    <video
                       controls
                       className="w-full h-full object-cover"
                       poster=""
