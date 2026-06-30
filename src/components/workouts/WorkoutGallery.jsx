@@ -10,6 +10,7 @@ import { getWorkoutVideos } from '@/db';
 const WorkoutGallery = ({ refreshTrigger }) => {
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [playingVideo, setPlayingVideo] = useState(null);
 
   useEffect(() => {
     const fetchWorkouts = async () => {
@@ -75,21 +76,44 @@ const WorkoutGallery = ({ refreshTrigger }) => {
                 transition={{ delay: idx * 0.05 }}
                 className="bg-card rounded-2xl overflow-hidden border border-border flex flex-col group shadow-sm"
               >
-                <div className="aspect-video bg-black relative">
-                  {workout.platform === 'youtube' && workout.video_id ? (
+                <div className="aspect-video bg-black relative cursor-pointer group/thumb">
+                  {playingVideo === workout.id && workout.platform === 'youtube' && workout.video_id ? (
                     <iframe
-                      src={`https://www.youtube.com/embed/${workout.video_id}`}
+                      src={`https://www.youtube.com/embed/${workout.video_id}?autoplay=1`}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                       className="w-full h-full"
                     />
-                  ) : workout.platform === 'vimeo' && workout.video_id ? (
+                  ) : playingVideo === workout.id && workout.platform === 'vimeo' && workout.video_id ? (
                     <iframe
-                      src={`https://player.vimeo.com/video/${workout.video_id}`}
+                      src={`https://player.vimeo.com/video/${workout.video_id}?autoplay=1`}
                       allow="autoplay; fullscreen; picture-in-picture"
                       allowFullScreen
                       className="w-full h-full"
                     />
+                  ) : workout.platform === 'youtube' && workout.video_id ? (
+                    <div
+                      className="relative w-full h-full bg-cover bg-center"
+                      style={{ backgroundImage: `url(https://img.youtube.com/vi/${workout.video_id}/hqdefault.jpg)` }}
+                      onClick={() => setPlayingVideo(workout.id)}
+                    >
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity group-hover/thumb:bg-black/10">
+                        <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform group-hover/thumb:scale-110">
+                          <PlayCircle className="w-8 h-8 text-black ml-1" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : workout.platform === 'vimeo' && workout.video_id ? (
+                    <div
+                      className="relative w-full h-full bg-muted flex items-center justify-center"
+                      onClick={() => setPlayingVideo(workout.id)}
+                    >
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity group-hover/thumb:bg-black/10">
+                        <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg transition-transform group-hover/thumb:scale-110">
+                          <PlayCircle className="w-8 h-8 text-black ml-1" />
+                        </div>
+                      </div>
+                    </div>
                   ) : workout.video_file_url ? (
                     <video
                       controls
