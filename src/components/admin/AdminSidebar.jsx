@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Users, Dumbbell, Video, Trophy, Heart,
-  UtensilsCrossed, Globe, Beef, Sunrise,
+  UtensilsCrossed,
   Film, Mic, Quote,
   MessageSquare, Star,
   Shirt, Tag,
@@ -41,10 +41,7 @@ const sections = [
   {
     label: 'Nutrition',
     items: [
-      { label: 'Meal Recipes', path: '/admin/meal-recipes', icon: UtensilsCrossed },
-      { label: 'Ethiopian Meals', path: '/admin/ethiopian-meals', icon: Globe },
-      { label: 'High Protein', path: '/admin/high-protein-meals', icon: Beef },
-      { label: 'Fasting Breakfasts', path: '/admin/fasting-breakfasts', icon: Sunrise },
+      { label: 'All Meals', path: '/admin/meals', icon: UtensilsCrossed },
     ],
   },
   {
