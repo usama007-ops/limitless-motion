@@ -6,7 +6,7 @@ import { Clock, Flame } from 'lucide-react';
 const MealCard = ({ meal }) => {
   const imageUrl = meal?.imageUrl || meal?.image_url || meal?.image;
   const prepTime = meal?.prepTimeMinutes ?? meal?.prep_time_minutes ?? 0;
-  const calories = meal?.caloriesTotal ?? meal?.calories_total ?? 0;
+  const calories = meal?.caloriesTotal ?? meal?.calories_total ?? meal?.nutrition?.calories ?? 0;
   
   return (
     <Card className="overflow-hidden border-border bg-card shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
