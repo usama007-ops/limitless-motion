@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getMealRecipes, getEthiopianMeals } from '@/db';
+import { getMealRecipes, getEthiopianMeals, getHighProteinMeals, getFastingBreakfasts } from '@/db';
 
 export const useMealPlanGenerator = () => {
   const [loading, setLoading] = useState(false);
@@ -30,39 +30,68 @@ export const useMealPlanGenerator = () => {
     return 'https://images.unsplash.com/photo-1680211977755-ca9665d40d51?auto=format&fit=crop&q=80&w=600';
   };
 
+  function categorize(recipes) {
+    const cats = { breakfast: [], lunch: [], dinner: [] };
+    (recipes || []).forEach(r => {
+      const cat = r.category;
+      if (cat === 'breakfast') cats.breakfast.push(r);
+      else if (cat === 'lunch') cats.lunch.push(r);
+      else if (cat === 'dinner') cats.dinner.push(r);
+    });
+    return cats;
+  }
+
   const generatePlan = useCallback(async (macros, durationWeeks, preference) => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      let fetchedRecipes = [];
+      let recipes = { breakfast: [], lunch: [], dinner: [] };
+
       try {
-        if (preference === 'ethiopian-fasting' || preference === 'ethiopian-non-fasting') {
-          fetchedRecipes = await getEthiopianMeals();
+        if (preference === 'ethiopian-fasting') {
+          const ethiopian = await getEthiopianMeals();
+          const fbs = await getFastingBreakfasts({ category: 'ethiopian' });
+          const ethCats = categorize(ethiopian);
+          const fbCats = categorize(fbs);
+          recipes.breakfast = [...ethCats.breakfast, ...fbCats.breakfast];
+          recipes.lunch = ethCats.lunch;
+          recipes.dinner = ethCats.dinner;
+        } else if (preference === 'ethiopian-non-fasting') {
+          const ethiopian = await getEthiopianMeals();
+          const hp = await getHighProteinMeals();
+          const ethCats = categorize(ethiopian);
+          const hpCats = categorize(hp);
+          recipes.breakfast = [...ethCats.breakfast, ...hpCats.breakfast];
+          recipes.lunch = [...ethCats.lunch, ...hpCats.lunch];
+          recipes.dinner = [...ethCats.dinner, ...hpCats.dinner];
         } else {
-          fetchedRecipes = await getMealRecipes();
+          const [mealRecipes, hp] = await Promise.all([
+            getMealRecipes(),
+            getHighProteinMeals(),
+          ]);
+          const filtered = (mealRecipes || []).filter(r =>
+            !r.season || r.season === 'non-fasting' || r.season === 'both'
+          );
+          const mrCats = categorize(filtered);
+          const hpCats = categorize(hp);
+          recipes.breakfast = [...mrCats.breakfast, ...hpCats.breakfast];
+          recipes.lunch = [...mrCats.lunch, ...hpCats.lunch];
+          recipes.dinner = [...mrCats.dinner, ...hpCats.dinner];
         }
       } catch (dbError) {
         console.warn("Database fetch failed, falling back to built-in recipes.", dbError);
       }
 
-      const recipes = { breakfast: [], lunch: [], dinner: [] };
-      if (fetchedRecipes && fetchedRecipes.length > 5) {
-        fetchedRecipes.forEach(r => {
-          const cat = r.category || r.category;
-          if (cat === 'breakfast') recipes.breakfast.push(r);
-          else if (cat === 'lunch') recipes.lunch.push(r);
-          else if (cat === 'dinner') recipes.dinner.push(r);
-        });
-      } else {
-        recipes.breakfast = fallbackMeals.breakfast;
-        recipes.lunch = fallbackMeals.lunch;
-        recipes.dinner = fallbackMeals.dinner;
-      }
+      Object.keys(recipes).forEach(cat => {
+        if (recipes[cat].length === 0) {
+          recipes[cat] = fallbackMeals[cat];
+        }
+      });
 
       const totalDays = durationWeeks * 7;
       const targetCals = macros.calories;
-      
+
       const splits = [
         { type: 'Breakfast', ratio: 0.25, options: recipes.breakfast },
         { type: 'Lunch', ratio: 0.40, options: recipes.lunch },
@@ -78,11 +107,11 @@ export const useMealPlanGenerator = () => {
           const dailyMeals = splits.map(split => {
             const optionIndex = (w * 7 + d + split.type.length) % split.options.length;
             const baseRecipe = split.options[optionIndex];
-            
+
             const mealTargetCals = targetCals * split.ratio;
             const baseCals = baseRecipe.calories_total || 350;
             const scale = Math.max(0.5, Math.min(2.5, mealTargetCals / baseCals));
-            
+
             return {
               id: `${w}-${d}-${split.type}`,
               type: split.type,

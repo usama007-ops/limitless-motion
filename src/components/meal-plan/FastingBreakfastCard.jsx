@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, Flame } from 'lucide-react';
 
 const FastingBreakfastCard = ({ meal }) => {
-  // Solin-style image rendering pattern: robust absolute positioning inside aspect-ratio container
-  const imageUrl = meal?.imageUrl || meal?.image || 'https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/6bb01ef1eb4fd954c7bc71f7d8928952.png';
+  const imageUrl = meal?.imageUrl || meal?.image_url || meal?.image || 'https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/6bb01ef1eb4fd954c7bc71f7d8928952.png';
+  const prepTime = meal?.prepTimeMinutes ?? meal?.prep_time_minutes ?? 0;
+  const calories = meal?.caloriesTotal ?? meal?.calories_total ?? 0;
 
   return (
     <Card className="overflow-hidden border-border bg-card shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
@@ -31,10 +32,10 @@ const FastingBreakfastCard = ({ meal }) => {
         </CardTitle>
         <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2 font-medium">
           <span className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-md">
-            <Clock className="w-4 h-4"/> {meal?.prepTimeMinutes || 0}m prep
+            <Clock className="w-4 h-4"/> {prepTime}m prep
           </span>
           <span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-md">
-            <Flame className="w-4 h-4"/> {meal?.caloriesTotal || 0} kcal
+            <Flame className="w-4 h-4"/> {calories} kcal
           </span>
         </div>
       </CardHeader>

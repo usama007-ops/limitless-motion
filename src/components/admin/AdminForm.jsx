@@ -134,7 +134,7 @@ export default function AdminForm({ fields, initialValues, onSubmit, submitLabel
                 onClick={() => removeItem(idx)}
                 className="absolute top-2 right-2 text-xs text-destructive hover:text-destructive/80 font-bold"
               >
-                Remove
+                ×
               </button>
               {isSimple ? (
                 <div className="flex items-center gap-2">

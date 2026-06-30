@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Flame } from 'lucide-react';
 
 const HighProteinMealCard = ({ meal }) => {
-  // Rely exclusively on the imageUrl prop directly from the database
-  const imageUrl = meal?.imageUrl || meal?.image;
+  const imageUrl = meal?.imageUrl || meal?.image_url || meal?.image;
+  const protein = meal?.proteinGrams ?? meal?.protein_grams ?? 0;
+  const calories = meal?.caloriesTotal ?? meal?.calories_total ?? 0;
 
   return (
     <Card className="overflow-hidden border-border bg-card shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">
@@ -29,12 +30,12 @@ const HighProteinMealCard = ({ meal }) => {
             {meal?.name || 'Unknown Meal'}
           </CardTitle>
           <Badge className="bg-primary text-primary-foreground shadow-sm shrink-0">
-            {meal?.proteinGrams || 0}g Protein
+            {protein}g Protein
           </Badge>
         </div>
         <div className="flex items-center gap-3 text-sm text-muted-foreground mt-3 font-medium">
           <span className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-md">
-            <Flame className="w-4 h-4"/> {meal?.caloriesTotal || 0} kcal
+            <Flame className="w-4 h-4"/> {calories} kcal
           </span>
         </div>
       </CardHeader>
