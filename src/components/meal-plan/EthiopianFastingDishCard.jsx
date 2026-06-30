@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 
 const EthiopianFastingDishCard = ({ meal }) => {
   // Solin-style image rendering pattern: robust absolute positioning inside aspect-ratio container
-  const imageUrl = meal?.imageUrl || meal?.image || 'https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/51e8e0fc94feb6cb0c1daf189b374090.png';
+  const imageUrl = meal?.imageUrl || meal?.image_url || meal?.image || 'https://horizons-cdn.hostinger.com/c08aaf74-fefb-4823-ab59-73a42ac7ff97/51e8e0fc94feb6cb0c1daf189b374090.png';
 
   return (
     <Card className="overflow-hidden border-border bg-card shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group">

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getMealRecipes, getEthiopianMeals, getHighProteinMeals, getFastingBreakfasts } from '@/db';
+import { invalidatePrefix } from '@/lib/cache';
 
 export const useMealPlanGenerator = () => {
   const [loading, setLoading] = useState(false);
@@ -41,9 +42,38 @@ export const useMealPlanGenerator = () => {
     return cats;
   }
 
+  function findBestRecipe(recipes, mealTargets, varietyOffset) {
+    if (!recipes.length) return null;
+
+    const tCals = mealTargets.calories || 1;
+    const tPRatio = mealTargets.protein / tCals;
+    const tCRatio = mealTargets.carbs / tCals;
+    const tFRatio = mealTargets.fats / tCals;
+
+    const scored = recipes.map(r => {
+      const rCals = r.calories_total || 350;
+      const rPRatio = (r.protein_grams || 20) / rCals;
+      const rCRatio = (r.carbs_grams || 30) / rCals;
+      const rFRatio = (r.fats_grams || 10) / rCals;
+
+      const dist = Math.sqrt(
+        (rPRatio - tPRatio) ** 2 +
+        (rCRatio - tCRatio) ** 2 +
+        (rFRatio - tFRatio) ** 2
+      );
+      return { recipe: r, dist };
+    });
+
+    scored.sort((a, b) => a.dist - b.dist);
+    const topN = Math.min(3, scored.length);
+    return scored[varietyOffset % topN].recipe;
+  }
+
   const generatePlan = useCallback(async (macros, durationWeeks, preference) => {
     setLoading(true);
     setError(null);
+
+    await invalidatePrefix('nutrition');
 
     try {
       let recipes = { breakfast: [], lunch: [], dinner: [] };
@@ -89,8 +119,10 @@ export const useMealPlanGenerator = () => {
         }
       });
 
-      const totalDays = durationWeeks * 7;
       const targetCals = macros.calories;
+      const targetProtein = macros.protein;
+      const targetCarbs = macros.carbs;
+      const targetFats = macros.fats;
 
       const splits = [
         { type: 'Breakfast', ratio: 0.25, options: recipes.breakfast },
@@ -105,12 +137,18 @@ export const useMealPlanGenerator = () => {
         const weekDays = [];
         for (let d = 1; d <= 7; d++) {
           const dailyMeals = splits.map(split => {
-            const optionIndex = (w * 7 + d + split.type.length) % split.options.length;
-            const baseRecipe = split.options[optionIndex];
+            const mealTargets = {
+              calories: targetCals * split.ratio,
+              protein: targetProtein * split.ratio,
+              carbs: targetCarbs * split.ratio,
+              fats: targetFats * split.ratio,
+            };
 
-            const mealTargetCals = targetCals * split.ratio;
+            const varietyOffset = (w * 7 + d + split.type.length);
+            const baseRecipe = findBestRecipe(split.options, mealTargets, varietyOffset);
+
             const baseCals = baseRecipe.calories_total || 350;
-            const scale = Math.max(0.5, Math.min(2.5, mealTargetCals / baseCals));
+            const scale = Math.max(0.5, Math.min(2.5, mealTargets.calories / baseCals));
 
             return {
               id: `${w}-${d}-${split.type}`,
