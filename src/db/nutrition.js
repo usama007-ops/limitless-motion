@@ -3,83 +3,72 @@ import { getOrSet, cacheKey, invalidatePrefix, TTL } from '@/lib/cache'
 
 const CACHE_PREFIX = 'nutrition'
 
+async function mealFetch(table, params = {}) {
+  const q = new URLSearchParams({ table })
+  if (params.season) q.set('season', params.season)
+  if (params.category) q.set('category', params.category)
+  if (params.sortBy) q.set('sortBy', params.sortBy)
+  if (params.ascending) q.set('ascending', 'true')
+  if (params.limit) q.set('limit', String(params.limit))
+
+  const res = await fetch(`/api/meals?${q}`)
+  if (!res.ok) throw new Error(`Failed to fetch ${table}`)
+  const { data } = await res.json()
+  return data
+}
+
 // ─── Meal Recipes ───
 
 export async function getMealRecipes() {
-  return getOrSet(cacheKey(CACHE_PREFIX, 'meal-recipes'), async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase.from('meal_recipes').select('*')
-    if (error) throw error
-    return data
-  }, TTL.RECIPES)
+  return getOrSet(cacheKey(CACHE_PREFIX, 'meal-recipes'), () => mealFetch('meal_recipes'), TTL.RECIPES)
 }
 
 export async function getMealRecipesSorted(sortBy = 'calories_total', ascending = false) {
-  return getOrSet(cacheKey(CACHE_PREFIX, 'meal-recipes', sortBy, ascending ? 'asc' : 'desc'), async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('meal_recipes')
-      .select('*')
-      .order(sortBy, { ascending })
-    if (error) throw error
-    return data
-  }, TTL.RECIPES)
+  return getOrSet(
+    cacheKey(CACHE_PREFIX, 'meal-recipes', sortBy, ascending ? 'asc' : 'desc'),
+    () => mealFetch('meal_recipes', { sortBy, ascending }),
+    TTL.RECIPES
+  )
 }
 
 export async function getMealRecipesBySeason(season) {
-  return getOrSet(cacheKey(CACHE_PREFIX, 'meal-recipes', 'season', season), async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('meal_recipes')
-      .select('*')
-      .eq('season', season)
-    if (error) throw error
-    return data
-  }, TTL.RECIPES)
+  return getOrSet(
+    cacheKey(CACHE_PREFIX, 'meal-recipes', 'season', season),
+    () => mealFetch('meal_recipes', { season }),
+    TTL.RECIPES
+  )
 }
 
 // ─── Ethiopian Meals ───
 
 export async function getEthiopianMeals() {
-  return getOrSet(cacheKey(CACHE_PREFIX, 'ethiopian-meals'), async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase.from('ethiopian_meals').select('*').order('created_at', { ascending: false })
-    if (error) throw error
-    return data
-  }, TTL.MEALS)
+  return getOrSet(
+    cacheKey(CACHE_PREFIX, 'ethiopian-meals'),
+    () => mealFetch('ethiopian_meals', { sortBy: 'created_at', ascending: false }),
+    TTL.MEALS
+  )
 }
 
 // ─── High Protein Meals ───
 
 export async function getHighProteinMeals({ category, limit } = {}) {
   const key = cacheKey(CACHE_PREFIX, 'high-protein', category || 'all', limit ? `limit-${limit}` : 'all')
-  return getOrSet(key, async () => {
-    const supabase = createClient()
-    let query = supabase.from('high_protein_meals').select('*').order('protein_grams', { ascending: false })
-
-    if (category) query = query.eq('category', category)
-    if (limit) query = query.limit(limit)
-
-    const { data, error } = await query
-    if (error) throw error
-    return data
-  }, TTL.MEALS)
+  return getOrSet(
+    key,
+    () => mealFetch('high_protein_meals', { sortBy: 'protein_grams', ascending: false, category, limit }),
+    TTL.MEALS
+  )
 }
 
 // ─── Fasting Breakfasts ───
 
 export async function getFastingBreakfasts({ category } = {}) {
   const key = cacheKey(CACHE_PREFIX, 'fasting-breakfasts', category || 'all')
-  return getOrSet(key, async () => {
-    const supabase = createClient()
-    let query = supabase.from('fasting_breakfasts').select('*').order('created_at', { ascending: false })
-
-    if (category) query = query.eq('category', category)
-
-    const { data, error } = await query
-    if (error) throw error
-    return data
-  }, TTL.MEALS)
+  return getOrSet(
+    key,
+    () => mealFetch('fasting_breakfasts', { sortBy: 'created_at', ascending: false, category }),
+    TTL.MEALS
+  )
 }
 
 // ─── Macro Goals ───

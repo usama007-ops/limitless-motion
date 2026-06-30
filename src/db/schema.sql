@@ -307,11 +307,9 @@ create table if not exists public.meal_recipes (
 
 alter table public.meal_recipes enable row level security;
 
-create policy "Premium users and admins can view meal recipes"
+create policy "Anyone can view meal recipes"
   on public.meal_recipes for select
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and (is_premium = true or role = 'admin'))
-  );
+  using (true);
 
 create policy "Admins can write meal recipes"
   on public.meal_recipes for insert with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
@@ -336,11 +334,9 @@ create table if not exists public.ethiopian_meals (
 
 alter table public.ethiopian_meals enable row level security;
 
-create policy "Premium users and admins can view ethiopian meals"
+create policy "Anyone can view ethiopian meals"
   on public.ethiopian_meals for select
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and (is_premium = true or role = 'admin'))
-  );
+  using (true);
 
 create policy "Admins can write ethiopian meals"
   on public.ethiopian_meals for insert with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
@@ -365,11 +361,9 @@ create table if not exists public.high_protein_meals (
 
 alter table public.high_protein_meals enable row level security;
 
-create policy "Premium users and admins can view high protein meals"
+create policy "Anyone can view high protein meals"
   on public.high_protein_meals for select
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and (is_premium = true or role = 'admin'))
-  );
+  using (true);
 
 create policy "Admins can write high protein meals"
   on public.high_protein_meals for insert with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
@@ -395,11 +389,9 @@ create table if not exists public.fasting_breakfasts (
 
 alter table public.fasting_breakfasts enable row level security;
 
-create policy "Premium users and admins can view fasting breakfasts"
+create policy "Anyone can view fasting breakfasts"
   on public.fasting_breakfasts for select
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and (is_premium = true or role = 'admin'))
-  );
+  using (true);
 
 create policy "Admins can write fasting breakfasts"
   on public.fasting_breakfasts for insert with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
