@@ -263,7 +263,7 @@ const MovePage = () => {
         </motion.div>
 
         {filteredPrograms.length > 0 && (
-          <div className="flex flex-wrap gap-3 mb-10">
+          <div className="flex flex-wrap gap-3 mt-24 mb-10">
             {filteredPrograms.map(p => (
               <Button
                 key={p.id}
@@ -441,7 +441,7 @@ const MovePage = () => {
                                                   size="sm"
                                                   disabled={!dayExs.every(ex => checkedExercises[ex.id]) || completing}
                                                   onClick={() => handleComplete(day.id)}
-                                                  className="bg-[hsl(var(--brand-move))] hover:bg-[hsl(var(--brand-move))/90] text-white font-bold gap-2"
+                                                  className="bg-[hsl(var(--brand-move))] hover:bg-[hsl(var(--brand-move))/90] text-black border border-[hsl(var(--brand-move))] font-bold gap-2"
                                                 >
                                                   {completing ? (
                                                     <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>

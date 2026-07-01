@@ -96,9 +96,9 @@ export default function HomePage() {
               <p className="text-muted-foreground leading-relaxed mb-8 flex-grow text-sm">
                 Cognitive conditioning, mindset architecture, and precise progression analytics.
               </p>
-              <Link href="/think" className="text-xs font-semibold uppercase tracking-[0.1em] text-primary hover:text-accent transition-colors flex items-center mt-auto">
+              <button className="text-xs font-semibold uppercase tracking-[0.1em] text-primary hover:text-accent transition-colors flex items-center mt-auto cursor-default pointer-events-none">
                 Explore Mindset <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
+              </button>
             </div>
 
             <div className="bg-secondary p-10 border border-secondary hover:border-accent transition-all duration-300 flex flex-col h-full items-start rounded-lg relative overflow-hidden group shadow-sm hover:shadow-md">

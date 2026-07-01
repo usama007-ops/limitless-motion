@@ -48,21 +48,33 @@ const SuccessStoryModal = ({ story, isOpen, onClose }) => {
 
             {/* Comparison Slider */}
             <div className="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-xl overflow-hidden bg-muted shadow-inner select-none group">
-              <img 
-                src={story.afterPhoto} 
-                alt={`${story.name} After`} 
-                className="absolute inset-0 w-full h-full object-cover object-center"
-              />
+              {story.afterPhoto ? (
+                <img 
+                  src={story.afterPhoto} 
+                  alt={`${story.name} After`} 
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                  <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">No Photo</span>
+                </div>
+              )}
               <div 
                 className="absolute inset-0 overflow-hidden border-r-2 border-white shadow-[2px_0_10px_rgba(0,0,0,0.3)]"
                 style={{ width: `${sliderPosition}%` }}
               >
-                <img 
-                  src={story.beforePhoto} 
-                  alt={`${story.name} Before`} 
-                  className="absolute inset-0 w-full h-full object-cover object-center max-w-none"
-                  style={{ width: `${100 / (sliderPosition / 100)}%` }}
-                />
+                {story.beforePhoto ? (
+                  <img 
+                    src={story.beforePhoto} 
+                    alt={`${story.name} Before`} 
+                    className="absolute inset-0 w-full h-full object-cover object-center max-w-none"
+                    style={{ width: `${100 / (sliderPosition / 100)}%` }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                    <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">No Photo</span>
+                  </div>
+                )}
                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-md text-xs font-bold tracking-wider uppercase">
                   Before
                 </div>

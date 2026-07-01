@@ -180,7 +180,7 @@ const ThreadsPage = () => {
             <>
               <DialogHeader>
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge className="bg-[hsl(var(--brand-threads))]">{selectedChallenge.status}</Badge>
+                  <Badge className="bg-[hsl(var(--brand-threads))] text-black">{selectedChallenge.status}</Badge>
                   <Badge variant="outline">{selectedChallenge.duration}</Badge>
                 </div>
                 <DialogTitle className="text-2xl">{selectedChallenge.name}</DialogTitle>
@@ -203,7 +203,7 @@ const ThreadsPage = () => {
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-                <Button className="bg-[hsl(var(--brand-threads))] hover:bg-[hsl(var(--brand-threads))/90] text-white" onClick={() => handleJoinChallenge(selectedChallenge.id)}>
+                <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-primary text-white bg-primary shadow-sm hover:bg-primary hover:text-primary-foreground h-9 px-4 py-2" onClick={() => handleJoinChallenge(selectedChallenge.id)}>
                   Join Challenge <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </DialogFooter>

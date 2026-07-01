@@ -58,16 +58,25 @@ export async function deletePodcast(id) {
 // ─── Affirmations ───
 
 export async function getLatestAffirmation() {
-  return getOrSet(cacheKey(CACHE_PREFIX, 'affirmation', 'latest'), async () => {
+  const now = new Date()
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000
+  const etMs = utcMs + (-4 * 3600000)
+  const etDate = new Date(etMs)
+  etDate.setHours(etDate.getHours() - 6)
+  const daySeed = `${etDate.getFullYear()}-${String(etDate.getMonth()+1).padStart(2,'0')}-${String(etDate.getDate()).padStart(2,'0')}`
+
+  return getOrSet(cacheKey(CACHE_PREFIX, 'affirmation', 'daily', daySeed), async () => {
     const supabase = createClient()
-    const { data, error } = await supabase
-      .from('affirmations')
-      .select('*')
-      .order('date', { ascending: false })
-      .limit(1)
-      .single()
-    if (error && error.code !== 'PGRST116') throw error
-    return data || null
+    const { data, error } = await supabase.from('affirmations').select('*')
+    if (error) throw error
+    if (!data || data.length === 0) return null
+
+    let hash = 0
+    for (let i = 0; i < daySeed.length; i++) {
+      hash = ((hash << 5) - hash) + daySeed.charCodeAt(i)
+      hash |= 0
+    }
+    return data[Math.abs(hash) % data.length]
   }, TTL.AFFIRMATIONS)
 }
 
@@ -122,12 +131,30 @@ export async function createCommunityPost(post) {
   return data
 }
 
-export async function likePost(postId) {
+export async function likePost(postId, userId) {
   const supabase = createClient()
-  const { data, error } = await supabase.rpc('increment_likes', { post_id: postId })
+  const { data: post, error: fetchErr } = await supabase
+    .from('community_posts')
+    .select('likes, liked_by')
+    .eq('id', postId)
+    .single()
+  if (fetchErr) throw fetchErr
+
+  const likedBy = post.liked_by || []
+  if (userId && likedBy.includes(userId)) {
+    throw new Error('Already liked')
+  }
+
+  const update = userId
+    ? { likes: (post.likes || 0) + 1, liked_by: [...likedBy, userId] }
+    : { likes: (post.likes || 0) + 1 }
+
+  const { error } = await supabase
+    .from('community_posts')
+    .update(update)
+    .eq('id', postId)
   if (error) throw error
   await invalidatePrefix(CACHE_PREFIX)
-  return data
 }
 
 // ─── Comments ───
@@ -205,29 +232,6 @@ export async function getSuccessStories() {
     if (error) throw error
     return data
   }, TTL.VIDEOS)
-}
-
-// ─── Attire Recommendations ───
-
-export async function getAttireRecommendations() {
-  return getOrSet(cacheKey(CACHE_PREFIX, 'attire'), async () => {
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('attire_recommendations')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100)
-    if (error) throw error
-    return data
-  }, TTL.ATTIRE)
-}
-
-export async function createAttireRecommendation(rec) {
-  const supabase = createClient()
-  const { data, error } = await supabase.from('attire_recommendations').insert(rec).select().single()
-  if (error) throw error
-  await invalidatePrefix(CACHE_PREFIX)
-  return data
 }
 
 // ─── Apparel Products ───

@@ -155,7 +155,7 @@ export const useMealPlanGenerator = () => {
               type: split.type,
               name: baseRecipe.name,
               portion: scale > 1.2 ? 'Large Portion' : scale < 0.8 ? 'Small Portion' : 'Standard Portion',
-              image: imgUrl,
+              image: baseRecipe.image_url || baseRecipe.imageUrl || imgUrl,
               nutrition: {
                 calories: Math.round((baseRecipe.calories_total || 350) * scale),
                 protein: Math.round((baseRecipe.protein_grams || 20) * scale),

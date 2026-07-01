@@ -8,7 +8,6 @@ import { adminCreate } from '@/lib/adminDb'
 
 const fields = [
   { name: 'text', label: 'Affirmation Text', type: 'textarea', required: true, rows: 3 },
-  { name: 'date', label: 'Scheduled Date', type: 'date' },
 ]
 
 export default function NewAffirmation() {
@@ -22,8 +21,6 @@ export default function NewAffirmation() {
     setLoading(true); setError(null)
     try {
       const payload = { text: data.text }
-      if (data.date) payload.date = data.date
-      payload.date = payload.date || new Date().toISOString().split('T')[0]
       await adminCreate('affirmations', payload)
       router.push('/admin/affirmations')
     } catch (err) { setError(err.message); setLoading(false) }

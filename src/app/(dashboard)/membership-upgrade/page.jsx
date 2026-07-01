@@ -116,7 +116,7 @@ const MembershipUpgradePage = () => {
             <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-1">Current Status</p>
             <div className="flex items-center gap-3">
               <span className="text-2xl font-bold text-foreground">{currentTierName} Plan</span>
-              <Badge variant={isPremium ? 'default' : 'secondary'} className={isPremium ? 'bg-success hover:bg-success/90' : ''}>
+              <Badge variant={isPremium ? 'default' : 'secondary'} className={isPremium ? 'bg-success hover:bg-success/90 text-black' : ''}>
                 {isPremium ? 'Active' : 'Free Tier'}
               </Badge>
             </div>

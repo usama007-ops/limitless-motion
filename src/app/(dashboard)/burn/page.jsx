@@ -38,8 +38,8 @@ const BurnPage = () => {
             </p>
           </div>
         </motion.div>
-        <div className="mb-12 mt-[96px]">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 mb-8">Video Library</h2>
+        <div className="mb-12 mt-24">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-8">Video Library</h2>
           <WorkoutGallery refreshTrigger={refreshKey} />
         </div>
       </div>

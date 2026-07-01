@@ -145,12 +145,12 @@ export default function CommentSection({ postId, comments: initialComments, expa
     }
     setSubmitting(true);
     try {
-      const newComment = await addComment(postId, {
+      await addComment(postId, {
         authorName: currentUser.name || currentUser.email?.split('@')[0] || 'Anonymous',
         content: commentText.trim(),
       });
-      setComments(prev => [...prev, newComment]);
       setCommentText('');
+      await handleRefresh();
     } catch {
       toast.error('Failed to post comment');
     } finally {

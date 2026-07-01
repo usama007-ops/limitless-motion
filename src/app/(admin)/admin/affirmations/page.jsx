@@ -11,7 +11,6 @@ import { adminDelete } from '@/lib/adminDb'
 
 const columns = [
   { key: 'text', label: 'Affirmation', sortable: true, render: (val) => val ? (val.length > 80 ? val.slice(0, 80) + '...' : val) : '-' },
-  { key: 'date', label: 'Date', sortable: true, render: (val) => val ? new Date(val).toLocaleDateString() : '-' },
 ]
 
 export default function AdminAffirmations() {

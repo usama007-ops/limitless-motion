@@ -9,7 +9,6 @@ import { adminUpdate } from '@/lib/adminDb'
 
 const fields = [
   { name: 'text', label: 'Affirmation Text', type: 'textarea', rows: 3, required: true },
-  { name: 'date', label: 'Date', type: 'date' },
 ]
 
 export default function EditAffirmation() {

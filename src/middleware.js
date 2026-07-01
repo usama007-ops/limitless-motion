@@ -3,24 +3,23 @@ import { NextResponse } from 'next/server'
 
 const authProtectedPaths = [
   '/dashboard', '/membership-upgrade', '/success', '/cancel',
-  '/align', '/burn', '/move', '/think', '/threads',
+  '/align', '/burn', '/move', '/threads',
   '/fuel', '/track', '/ethiopian-fasting', '/ethiopian-non-fasting',
   '/calorie-calculator', '/meal-plan',
-  '/resources', '/community', '/admin',
-  '/lets-think', '/lets-wear',
+  '/community', '/admin'
 ]
 
 const premiumPaths = [
-  '/dashboard', '/align', '/burn', '/move', '/think',
+  '/dashboard', '/align', '/burn', '/move',
   '/fuel', '/track', '/threads',
   '/ethiopian-fasting', '/ethiopian-non-fasting',
   '/calorie-calculator', '/meal-plan',
+  '/community',
 ]
 
 const freeAuthPaths = [
   '/membership-upgrade', '/success', '/cancel',
-  '/resources', '/community',
-  '/lets-think', '/lets-wear',
+  '/community',
 ]
 
 const publicPaths = [
