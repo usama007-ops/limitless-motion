@@ -98,7 +98,7 @@ const SubscriptionManager = () => {
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <p className="text-2xl font-bold text-foreground">{currentTier}</p>
-                <Badge variant={isPremium ? 'default' : 'secondary'} className={isPremium ? 'bg-success hover:bg-success/90' : ''}>
+                <Badge variant={isPremium ? 'default' : 'secondary'} className={isPremium ? 'bg-success hover:bg-success/90 text-black' : ''}>
                   {isPremium ? 'Active' : 'Free'}
                 </Badge>
               </div>
@@ -163,13 +163,13 @@ const SubscriptionManager = () => {
                 <div key={item.id} className="flex justify-between items-center border-b border-border pb-4 last:border-0 last:pb-0">
                   <div>
                     <p className="font-medium text-foreground">
-                      $${Number(item.amount).toFixed(2)} {item.currency?.toUpperCase() || 'USD'}
+                      ${Number(item.amount).toFixed(2)} {item.currency?.toUpperCase() || 'USD'}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(item.date).toLocaleDateString()}
                     </p>
                   </div>
-                  <Badge variant={item.status === 'succeeded' || item.status === 'completed' ? 'default' : 'secondary'} className={item.status === 'succeeded' || item.status === 'completed' ? 'bg-success hover:bg-success/90' : ''}>
+                  <Badge variant={item.status === 'succeeded' || item.status === 'completed' ? 'default' : 'secondary'} className={item.status === 'succeeded' || item.status === 'completed' ? 'bg-success hover:bg-success/90 text-black' : ''}>
                     {item.status}
                   </Badge>
                 </div>
