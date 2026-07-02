@@ -23,22 +23,32 @@ const MembershipUpgradePage = () => {
   useEffect(() => {
     document.title = 'Membership - Limitless Motion';
     const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
+    const sessionId = params.get('session_id');
+
+    if (sessionId) {
       setShowSuccess(true);
       window.history.replaceState({}, '', '/membership-upgrade');
 
-      let attempts = 0;
-      const maxAttempts = 10;
-      const poll = async () => {
-        await refreshProfile();
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 1500);
+      (async () => {
+        try {
+          await fetch(`/api/stripe/verify-session?session_id=${sessionId}`);
+        } catch (e) {
+          console.error('Session verification error:', e);
         }
-      };
-      poll();
+
+        let attempts = 0;
+        const maxAttempts = 10;
+        const poll = async () => {
+          await refreshProfile();
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 1500);
+          }
+        };
+        poll();
+      })();
     }
-  }, []);
+  }, [refreshProfile]);
 
   useEffect(() => {
     let isMounted = true;
@@ -70,7 +80,7 @@ const MembershipUpgradePage = () => {
     if (!selectedTier || !currentUser?.id) return;
     setSubscribing(true);
     try {
-      const successUrl = `${window.location.origin}/membership-upgrade?success=true`;
+      const successUrl = `${window.location.origin}/membership-upgrade?session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = `${window.location.origin}/membership-upgrade`;
       const response = await fetch('/api/stripe/create-subscription-checkout', {
         method: 'POST',

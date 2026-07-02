@@ -163,7 +163,7 @@ const SubscriptionManager = () => {
                 <div key={item.id} className="flex justify-between items-center border-b border-border pb-4 last:border-0 last:pb-0">
                   <div>
                     <p className="font-medium text-foreground">
-                      ${(item.amount / 100).toFixed(2)} {item.currency?.toUpperCase() || 'USD'}
+                      $${Number(item.amount).toFixed(2)} {item.currency?.toUpperCase() || 'USD'}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(item.date).toLocaleDateString()}
