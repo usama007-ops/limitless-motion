@@ -4,9 +4,9 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 const TIER_PRICING = {
-  basic: { monthly: 999, yearly: 99999 },
-  premium: { monthly: 1999, yearly: 199999 },
-  elite: { monthly: 4999, yearly: 499999 },
+  basic: { monthly: 999, yearly: 9999 },
+  premium: { monthly: 1999, yearly: 19999 },
+  elite: { monthly: 4999, yearly: 49999 },
 }
 
 export async function POST(request) {
