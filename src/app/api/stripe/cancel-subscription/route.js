@@ -53,7 +53,7 @@ export async function POST(request) {
     const actionLower = action.toLowerCase()
 
     if (actionLower === 'cancel') {
-      result = await stripe.subscriptions.del(subscriptionId)
+      result = await stripe.subscriptions.cancel(subscriptionId)
 
       const today = new Date().toISOString().split('T')[0]
       await supabase
