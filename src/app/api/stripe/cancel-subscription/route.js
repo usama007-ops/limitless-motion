@@ -28,21 +28,31 @@ export async function POST(request) {
       .single()
 
     if (profileError || !profile) {
-      return NextResponse.json({ error: `User not found: ${userId}` }, { status: 404 })
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    if (!profile.stripe_subscription_id) {
+      return NextResponse.json({ error: 'No subscription found for this account' }, { status: 400 })
     }
 
     if (profile.stripe_subscription_id !== subscriptionId) {
       return NextResponse.json(
-        { error: 'Unauthorized: Subscription does not belong to this user' },
+        { error: 'Subscription does not belong to this user' },
         { status: 403 }
       )
+    }
+
+    const stripe = getStripe()
+    try {
+      await stripe.subscriptions.retrieve(subscriptionId)
+    } catch {
+      return NextResponse.json({ error: 'Subscription not found on Stripe. It may have been already cancelled.' }, { status: 404 })
     }
 
     let result
     const actionLower = action.toLowerCase()
 
     if (actionLower === 'cancel') {
-      const stripe = getStripe()
       result = await stripe.subscriptions.del(subscriptionId)
 
       const today = new Date().toISOString().split('T')[0]
@@ -53,8 +63,12 @@ export async function POST(request) {
           membership_end_date: today,
         })
         .eq('id', userId)
+
+      await supabase
+        .from('memberships')
+        .update({ status: 'cancelled', auto_renew: false })
+        .eq('stripe_subscription_id', subscriptionId)
     } else {
-      const stripe = getStripe()
       result = await stripe.subscriptions.update(subscriptionId, {
         pause_collection: { behavior: 'mark_uncollectible' },
       })
@@ -63,6 +77,11 @@ export async function POST(request) {
         .from('profiles')
         .update({ is_premium: false })
         .eq('id', userId)
+
+      await supabase
+        .from('memberships')
+        .update({ status: 'paused' })
+        .eq('stripe_subscription_id', subscriptionId)
     }
 
     const effectiveDate = new Date(result.current_period_end * 1000)

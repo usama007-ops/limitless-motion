@@ -25,12 +25,19 @@ export async function GET(request) {
 
     const supabase = getAdminClient()
 
+    let currentPeriodEnd = null
+    if (subscriptionId) {
+      const sub = await stripe.subscriptions.retrieve(subscriptionId)
+      currentPeriodEnd = new Date(sub.current_period_end * 1000).toISOString().split('T')[0]
+    }
+
     const updates = {
       stripe_customer_id: customerId,
       is_premium: true,
       current_tier: tier,
     }
     if (subscriptionId) updates.stripe_subscription_id = subscriptionId
+    if (currentPeriodEnd) updates.membership_end_date = currentPeriodEnd
     await supabase.from('profiles').update(updates).eq('id', userId)
 
     if (subscriptionId) {
@@ -46,6 +53,7 @@ export async function GET(request) {
         status: 'active',
         stripe_subscription_id: subscriptionId,
         start_date: new Date().toISOString().split('T')[0],
+        renewal_date: currentPeriodEnd,
         auto_renew: true,
       }
 
