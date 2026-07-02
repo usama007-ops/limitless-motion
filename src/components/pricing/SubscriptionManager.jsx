@@ -68,7 +68,7 @@ const SubscriptionManager = () => {
         fetchHistory(); // Refresh data
       } else {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to cancel subscription');
+        throw new Error(errData.message || errData.error || 'Failed to cancel subscription');
       }
     } catch (error) {
       console.error('Cancellation error:', error);
