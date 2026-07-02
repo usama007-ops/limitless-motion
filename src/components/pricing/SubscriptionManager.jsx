@@ -10,7 +10,7 @@ import apiServerClient from '@/lib/apiServerClient';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 const SubscriptionManager = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, profile, isPremium } = useAuth();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -46,7 +46,7 @@ const SubscriptionManager = () => {
   }, [fetchHistory]);
 
   const handleCancel = async () => {
-    if (!currentUser?.stripeSubscriptionId) {
+    if (!profile?.stripe_subscription_id) {
       toast.error('No active subscription found to cancel.');
       return;
     }
@@ -57,7 +57,7 @@ const SubscriptionManager = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subscriptionId: currentUser.stripeSubscriptionId,
+          subscriptionId: profile.stripe_subscription_id,
           action: 'cancel',
           userId: currentUser.id
         })
@@ -78,10 +78,9 @@ const SubscriptionManager = () => {
     }
   };
 
-  const isPremium = currentUser?.isPremium || false;
-  const currentTier = isPremium ? 'Premium Member' : 'Basic Plan';
-  const renewalDate = currentUser?.membershipEndDate 
-    ? new Date(currentUser.membershipEndDate).toLocaleDateString() 
+  const currentTier = isPremium ? (profile?.current_tier ? `${profile.current_tier.charAt(0).toUpperCase() + profile.current_tier.slice(1)} Plan` : 'Premium Member') : 'Basic Plan';
+  const renewalDate = profile?.membership_end_date 
+    ? new Date(profile.membership_end_date).toLocaleDateString() 
     : 'N/A';
 
   return (

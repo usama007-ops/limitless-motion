@@ -30,15 +30,50 @@ export const handleCheckoutCompleted = inngest.createFunction(
       return { skipped: true, reason: 'No client_reference_id' }
     }
 
+    let tier = 'premium'
+    if (subscriptionId) {
+      const sub = await step.run('fetch-subscription', async () => {
+        return await getStripe().subscriptions.retrieve(subscriptionId)
+      })
+      tier = tierFromSubscription(sub)
+    }
+
     await step.run('update-profile', async () => {
       const supabase = getAdminClient()
       const updates = {
         stripe_customer_id: customerId,
         is_premium: true,
+        current_tier: tier,
       }
       if (subscriptionId) updates.stripe_subscription_id = subscriptionId
       await supabase.from('profiles').update(updates).eq('id', userId)
     })
+
+    if (subscriptionId) {
+      await step.run('create-membership', async () => {
+        const supabase = getAdminClient()
+        const { data: existing } = await supabase
+          .from('memberships')
+          .select('id')
+          .eq('stripe_subscription_id', subscriptionId)
+          .maybeSingle()
+
+        const membership = {
+          user_id: userId,
+          tier: tier.charAt(0).toUpperCase() + tier.slice(1),
+          status: 'active',
+          stripe_subscription_id: subscriptionId,
+          start_date: new Date().toISOString().split('T')[0],
+          auto_renew: true,
+        }
+
+        if (existing) {
+          await supabase.from('memberships').update(membership).eq('id', existing.id)
+        } else {
+          await supabase.from('memberships').insert(membership)
+        }
+      })
+    }
 
     return { completed: true, userId, customerId, subscriptionId }
   }
@@ -76,6 +111,38 @@ export const handleSubscriptionUpdated = inngest.createFunction(
             membership_end_date: currentPeriodEnd,
           })
           .eq('id', profiles[0].id)
+      }
+    })
+
+    await step.run('upsert-membership', async () => {
+      const supabase = getAdminClient()
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('stripe_customer_id', customerId)
+
+      if (profiles && profiles.length > 0) {
+        const userId = profiles[0].id
+        const { data: existing } = await supabase
+          .from('memberships')
+          .select('id')
+          .eq('stripe_subscription_id', subscriptionId)
+          .maybeSingle()
+
+        const membership = {
+          user_id: userId,
+          tier: tier.charAt(0).toUpperCase() + tier.slice(1),
+          status: isActive ? 'active' : 'cancelled',
+          stripe_subscription_id: subscriptionId,
+          renewal_date: currentPeriodEnd,
+          auto_renew: isActive,
+        }
+
+        if (existing) {
+          await supabase.from('memberships').update(membership).eq('id', existing.id)
+        } else {
+          await supabase.from('memberships').insert(membership)
+        }
       }
     })
 
