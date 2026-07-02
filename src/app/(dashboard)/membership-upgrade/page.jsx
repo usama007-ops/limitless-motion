@@ -25,8 +25,18 @@ const MembershipUpgradePage = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
       setShowSuccess(true);
-      refreshProfile();
       window.history.replaceState({}, '', '/membership-upgrade');
+
+      let attempts = 0;
+      const maxAttempts = 10;
+      const poll = async () => {
+        await refreshProfile();
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1500);
+        }
+      };
+      poll();
     }
   }, []);
 

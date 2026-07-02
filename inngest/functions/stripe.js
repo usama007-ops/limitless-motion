@@ -30,13 +30,7 @@ export const handleCheckoutCompleted = inngest.createFunction(
       return { skipped: true, reason: 'No client_reference_id' }
     }
 
-    let tier = 'premium'
-    if (subscriptionId) {
-      const sub = await step.run('fetch-subscription', async () => {
-        return await getStripe().subscriptions.retrieve(subscriptionId)
-      })
-      tier = tierFromSubscription(sub)
-    }
+    const tier = (session.metadata?.tier || 'premium')
 
     await step.run('update-profile', async () => {
       const supabase = getAdminClient()

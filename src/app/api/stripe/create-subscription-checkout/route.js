@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 const TIER_PRICING = {
   basic: { monthly: 999, yearly: 99999 },
@@ -16,6 +18,27 @@ export async function POST(request) {
         { error: 'Missing required fields: tier, billingCycle, successUrl, cancelUrl' },
         { status: 400 }
       )
+    }
+
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+
+    const { data: { session: authSession } } = await supabase.auth.getSession()
+    if (!authSession?.user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
     const tierLower = tier.toLowerCase()
@@ -48,6 +71,11 @@ export async function POST(request) {
       mode: 'subscription',
       success_url: successUrl,
       cancel_url: cancelUrl,
+      client_reference_id: authSession.user.id,
+      metadata: {
+        user_id: authSession.user.id,
+        tier: tierLower,
+      },
     })
 
     return NextResponse.json({ url: session.url })
